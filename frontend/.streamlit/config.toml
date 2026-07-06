@@ -1,0 +1,7 @@
+[theme]
+base = "dark"
+primaryColor = "#00F0FF"          # Cyber Cyan accent
+backgroundColor = "#0B0E14"       # Deep tech background
+secondaryBackgroundColor = "#121721" # Charcoal cards
+textColor = "#E6EDF5"             # Clean light grey readable text
+font = "sans serif"

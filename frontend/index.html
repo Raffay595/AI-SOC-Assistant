@@ -1,0 +1,1971 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>AI SOC Assistant - Enterprise Operations Console</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+              "outline-variant": "#3b494b",
+              "primary-fixed-dim": "#00dbe9",
+              "surface": "#131315",
+              "on-tertiary": "#23323f",
+              "surface-container": "#201f21",
+              "secondary-container": "#47464b",
+              "inverse-surface": "#e5e1e4",
+              "on-primary-container": "#006970",
+              "tertiary": "#f0f6ff",
+              "error": "#ffb4ab",
+              "tertiary-fixed-dim": "#b8c8d9",
+              "surface-container-low": "#1b1b1d",
+              "surface-bright": "#39393b",
+              "primary-container": "#00f0ff",
+              "surface-variant": "#353437",
+              "on-tertiary-fixed-variant": "#394856",
+              "inverse-primary": "#006970",
+              "on-tertiary-container": "#51606e",
+              "tertiary-fixed": "#d4e4f5",
+              "on-primary-fixed": "#002022",
+              "on-tertiary-fixed": "#0d1d29",
+              "secondary": "#c8c5cb",
+              "on-background": "#e5e1e4",
+              "on-secondary-fixed-variant": "#47464b",
+              "on-surface": "#e5e1e4",
+              "surface-dim": "#131315",
+              "tertiary-container": "#cbdbec",
+              "inverse-on-surface": "#313032",
+              "on-primary-fixed-variant": "#004f54",
+              "surface-container-high": "#2a2a2c",
+              "on-secondary": "#303034",
+              "secondary-fixed-dim": "#c8c5cb",
+              "background": "#131315",
+              "on-error-container": "#ffdad6",
+              "secondary-fixed": "#e4e1e7",
+              "on-surface-variant": "#b9cacb",
+              "on-error": "#690005",
+              "on-primary": "#00363a",
+              "on-secondary-fixed": "#1b1b1f",
+              "surface-tint": "#00dbe9",
+              "outline": "#849495",
+              "surface-container-lowest": "#0e0e10",
+              "surface-container-highest": "#353437",
+              "primary-fixed": "#7df4ff",
+              "on-secondary-container": "#b6b4b9",
+              "primary": "#dbfcff",
+              "error-container": "#93000a"
+            },
+            "borderRadius": {
+              "DEFAULT": "4px",
+              "lg": "8px",
+              "xl": "12px",
+              "full": "9999px"
+            },
+            "spacing": {
+              "stack-sm": "4px",
+              "stack-lg": "16px",
+              "stack-md": "8px",
+              "gutter": "12px",
+              "unit": "4px",
+              "container-padding": "16px"
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+        body {
+            background-color: #0D0D0F;
+            color: #e5e1e4;
+            overflow-x: hidden;
+            font-family: 'Inter', sans-serif;
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #3b494b; border-radius: 2px; }
+        .glow-cyan { text-shadow: 0 0 10px rgba(0, 219, 233, 0.4); }
+        .card-border {
+            border: 1px solid #2A2A2E;
+            position: relative;
+            overflow: hidden;
+            --mouse-x: 50%;
+            --mouse-y: 50%;
+            --spotlight-color: rgba(0, 240, 255, 0.12);
+        }
+        .card-border::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle 250px at var(--mouse-x) var(--mouse-y), var(--spotlight-color), transparent 80%);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            pointer-events: none;
+            z-index: 1;
+        }
+        .card-border:hover::before {
+            opacity: 1;
+        }
+        /* Ensure card children stay above the overlay */
+        .card-border > * {
+            position: relative;
+            z-index: 2;
+        }
+
+        /* ====== FlowingMenu – sidebar variant ====== */
+        .fm-wrap {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .fm-group-label {
+            padding: 10px 16px 4px;
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: .12em;
+            color: #555;
+            text-transform: uppercase;
+            flex-shrink: 0;
+        }
+        .fm-group-label:first-child { padding-top: 0; }
+        .fm-item {
+            position: relative;
+            overflow: hidden;
+            border-top: 1px solid #2A2A2E;
+            flex-shrink: 0;
+        }
+        .fm-item:first-of-type { border-top: none; }
+        .fm-item.fm-active .fm-link {
+            color: #00F0FF !important;
+            background: rgba(0,240,255,.07);
+        }
+        .fm-item.fm-active .fm-link::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 2px;
+            background: #00F0FF;
+            box-shadow: 0 0 8px #00F0FF;
+        }
+        .fm-link {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding: 11px 16px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            color: #b9cacb;
+            text-decoration: none;
+            cursor: pointer;
+            background: transparent;
+            border: none;
+            transition: color .2s;
+            white-space: nowrap;
+        }
+        .fm-link:hover { color: #e5e1e4; }
+        .fm-link .material-symbols-outlined { font-size: 18px; flex-shrink: 0; }
+        /* Marquee overlay */
+        .fm-marquee {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            transform: translate3d(0, 101%, 0);
+            background: #00F0FF;
+            display: flex;
+            align-items: center;
+        }
+        .fm-marquee__inner-wrap {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+        }
+        .fm-marquee__inner {
+            display: flex;
+            align-items: center;
+            height: 100%;
+            width: fit-content;
+            will-change: transform;
+        }
+        .fm-marquee__part {
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+            color: #0D0D0F;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            gap: 8px;
+            padding: 0 12px;
+        }
+        .fm-marquee__part .material-symbols-outlined {
+            font-size: 14px;
+        }
+        .fm-marquee__icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 28px;
+            border-radius: 14px;
+            background: rgba(0,0,0,0.18);
+            border: 1px solid rgba(0,0,0,0.25);
+            flex-shrink: 0;
+            margin: 0 8px;
+            font-size: 17px !important;
+            color: #0D0D0F;
+        }
+        /* Settings row at bottom */
+        .fm-bottom {
+            margin-top: auto;
+            border-top: 1px solid #2A2A2E;
+            flex-shrink: 0;
+        }
+
+        /* ====== GradientText – SOC brand title ====== */
+        @keyframes gradientShift {
+            0%   { background-position: 0%   50%; }
+            100% { background-position: 100% 50%; }
+        }
+        .gradient-text {
+            background: linear-gradient(
+                to right,
+                #00F0FF, #4079ff, #40ffaa, #4079ff, #00F0FF
+            );
+            background-size: 300% 100%;
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            animation: gradientShift 3s ease infinite alternate;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body class="text-[14px] leading-5">
+    
+    <!-- Unified Sidebar -->
+    <aside class="fixed left-0 top-0 h-full w-[240px] z-50 bg-[#121721] border-r border-[#2A2A2E] flex flex-col py-4 gap-2">
+        <div class="px-4 mb-6">
+            <h1 class="text-xl font-bold tracking-tight"><span class="gradient-text">SOC ASSISTANT</span></h1>
+            <div class="flex items-center gap-2 mt-1">
+                <span id="health-dot" class="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_#22C55E]"></span>
+                <span id="health-text" class="text-[10px] font-bold text-[#b9cacb] uppercase">ONLINE</span>
+            </div>
+        </div>
+        
+        <nav class="flex-1 overflow-y-auto custom-scrollbar">
+            <div class="fm-wrap" id="flowing-menu">
+
+                <!-- OPERATIONS group -->
+                <div class="fm-group-label">Operations</div>
+
+                <div class="fm-item" data-screen="dashboard" id="nav-dashboard">
+                    <button class="fm-link" onclick="switchScreen('dashboard')">
+                        <span class="material-symbols-outlined">dashboard</span>Dashboard
+                    </button>
+                    <div class="fm-marquee">
+                        <div class="fm-marquee__inner-wrap">
+                            <div class="fm-marquee__inner">
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">dashboard</span><span>Dashboard</span><span class="fm-marquee__icon material-symbols-outlined">dashboard</span></div>
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">dashboard</span><span>Dashboard</span><span class="fm-marquee__icon material-symbols-outlined">dashboard</span></div>
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">dashboard</span><span>Dashboard</span><span class="fm-marquee__icon material-symbols-outlined">dashboard</span></div>
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">dashboard</span><span>Dashboard</span><span class="fm-marquee__icon material-symbols-outlined">dashboard</span></div>
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">dashboard</span><span>Dashboard</span><span class="fm-marquee__icon material-symbols-outlined">dashboard</span></div>
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">dashboard</span><span>Dashboard</span><span class="fm-marquee__icon material-symbols-outlined">dashboard</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fm-item" data-screen="alerts" id="nav-alerts">
+                    <button class="fm-link" onclick="switchScreen('alerts')">
+                        <span class="material-symbols-outlined">notifications</span>Alerts
+                    </button>
+                    <div class="fm-marquee">
+                        <div class="fm-marquee__inner-wrap">
+                            <div class="fm-marquee__inner">
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">notifications</span><span>Alerts</span><span class="fm-marquee__icon material-symbols-outlined">notifications</span></div>
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">notifications</span><span>Alerts</span><span class="fm-marquee__icon material-symbols-outlined">notifications</span></div>
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">notifications</span><span>Alerts</span><span class="fm-marquee__icon material-symbols-outlined">notifications</span></div>
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">notifications</span><span>Alerts</span><span class="fm-marquee__icon material-symbols-outlined">notifications</span></div>
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">notifications</span><span>Alerts</span><span class="fm-marquee__icon material-symbols-outlined">notifications</span></div>
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">notifications</span><span>Alerts</span><span class="fm-marquee__icon material-symbols-outlined">notifications</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fm-item" data-screen="alert_detail" id="nav-alert_detail">
+                    <button class="fm-link" onclick="switchScreen('alert_detail')">
+                        <span class="material-symbols-outlined">visibility</span>Alert Detail
+                    </button>
+                    <div class="fm-marquee">
+                        <div class="fm-marquee__inner-wrap">
+                            <div class="fm-marquee__inner">
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">visibility</span><span>Alert Detail</span><span class="fm-marquee__icon material-symbols-outlined">visibility</span></div>
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">visibility</span><span>Alert Detail</span><span class="fm-marquee__icon material-symbols-outlined">visibility</span></div>
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">visibility</span><span>Alert Detail</span><span class="fm-marquee__icon material-symbols-outlined">visibility</span></div>
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">visibility</span><span>Alert Detail</span><span class="fm-marquee__icon material-symbols-outlined">visibility</span></div>
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">visibility</span><span>Alert Detail</span><span class="fm-marquee__icon material-symbols-outlined">visibility</span></div>
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">visibility</span><span>Alert Detail</span><span class="fm-marquee__icon material-symbols-outlined">visibility</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- INVESTIGATIONS group -->
+                <div class="fm-group-label" style="margin-top:6px">Investigations</div>
+
+                <div class="fm-item" data-screen="ai_analysis" id="nav-ai_analysis">
+                    <button class="fm-link" onclick="switchScreen('ai_analysis')">
+                        <span class="material-symbols-outlined">psychology</span>AI Analysis
+                    </button>
+                    <div class="fm-marquee">
+                        <div class="fm-marquee__inner-wrap">
+                            <div class="fm-marquee__inner">
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">psychology</span><span>AI Analysis</span><span class="fm-marquee__icon material-symbols-outlined">psychology</span></div>
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">psychology</span><span>AI Analysis</span><span class="fm-marquee__icon material-symbols-outlined">psychology</span></div>
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">psychology</span><span>AI Analysis</span><span class="fm-marquee__icon material-symbols-outlined">psychology</span></div>
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">psychology</span><span>AI Analysis</span><span class="fm-marquee__icon material-symbols-outlined">psychology</span></div>
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">psychology</span><span>AI Analysis</span><span class="fm-marquee__icon material-symbols-outlined">psychology</span></div>
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">psychology</span><span>AI Analysis</span><span class="fm-marquee__icon material-symbols-outlined">psychology</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fm-item" data-screen="mitre" id="nav-mitre">
+                    <button class="fm-link" onclick="switchScreen('mitre')">
+                        <span class="material-symbols-outlined">grid_view</span>MITRE Matrix
+                    </button>
+                    <div class="fm-marquee">
+                        <div class="fm-marquee__inner-wrap">
+                            <div class="fm-marquee__inner">
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">grid_view</span><span>MITRE Matrix</span><span class="fm-marquee__icon material-symbols-outlined">grid_view</span></div>
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">grid_view</span><span>MITRE Matrix</span><span class="fm-marquee__icon material-symbols-outlined">grid_view</span></div>
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">grid_view</span><span>MITRE Matrix</span><span class="fm-marquee__icon material-symbols-outlined">grid_view</span></div>
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">grid_view</span><span>MITRE Matrix</span><span class="fm-marquee__icon material-symbols-outlined">grid_view</span></div>
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">grid_view</span><span>MITRE Matrix</span><span class="fm-marquee__icon material-symbols-outlined">grid_view</span></div>
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">grid_view</span><span>MITRE Matrix</span><span class="fm-marquee__icon material-symbols-outlined">grid_view</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fm-item" data-screen="incidents" id="nav-incidents">
+                    <button class="fm-link" onclick="switchScreen('incidents')">
+                        <span class="material-symbols-outlined">emergency</span>Incidents
+                    </button>
+                    <div class="fm-marquee">
+                        <div class="fm-marquee__inner-wrap">
+                            <div class="fm-marquee__inner">
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">emergency</span><span>Incidents</span><span class="fm-marquee__icon material-symbols-outlined">emergency</span></div>
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">emergency</span><span>Incidents</span><span class="fm-marquee__icon material-symbols-outlined">emergency</span></div>
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">emergency</span><span>Incidents</span><span class="fm-marquee__icon material-symbols-outlined">emergency</span></div>
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">emergency</span><span>Incidents</span><span class="fm-marquee__icon material-symbols-outlined">emergency</span></div>
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">emergency</span><span>Incidents</span><span class="fm-marquee__icon material-symbols-outlined">emergency</span></div>
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">emergency</span><span>Incidents</span><span class="fm-marquee__icon material-symbols-outlined">emergency</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- INTELLIGENCE group -->
+                <div class="fm-group-label" style="margin-top:6px">Intelligence</div>
+
+                <div class="fm-item" data-screen="threat_intel" id="nav-threat_intel">
+                    <button class="fm-link" onclick="switchScreen('threat_intel')">
+                        <span class="material-symbols-outlined">security_update_good</span>Threat Intel
+                    </button>
+                    <div class="fm-marquee">
+                        <div class="fm-marquee__inner-wrap">
+                            <div class="fm-marquee__inner">
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">security_update_good</span><span>Threat Intel</span><span class="fm-marquee__icon material-symbols-outlined">security_update_good</span></div>
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">security_update_good</span><span>Threat Intel</span><span class="fm-marquee__icon material-symbols-outlined">security_update_good</span></div>
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">security_update_good</span><span>Threat Intel</span><span class="fm-marquee__icon material-symbols-outlined">security_update_good</span></div>
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">security_update_good</span><span>Threat Intel</span><span class="fm-marquee__icon material-symbols-outlined">security_update_good</span></div>
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">security_update_good</span><span>Threat Intel</span><span class="fm-marquee__icon material-symbols-outlined">security_update_good</span></div>
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">security_update_good</span><span>Threat Intel</span><span class="fm-marquee__icon material-symbols-outlined">security_update_good</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fm-item" data-screen="chat" id="nav-chat">
+                    <button class="fm-link" onclick="switchScreen('chat')">
+                        <span class="material-symbols-outlined">forum</span>AI Chat
+                    </button>
+                    <div class="fm-marquee">
+                        <div class="fm-marquee__inner-wrap">
+                            <div class="fm-marquee__inner">
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">forum</span><span>AI Chat</span><span class="fm-marquee__icon material-symbols-outlined">forum</span></div>
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">forum</span><span>AI Chat</span><span class="fm-marquee__icon material-symbols-outlined">forum</span></div>
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">forum</span><span>AI Chat</span><span class="fm-marquee__icon material-symbols-outlined">forum</span></div>
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">forum</span><span>AI Chat</span><span class="fm-marquee__icon material-symbols-outlined">forum</span></div>
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">forum</span><span>AI Chat</span><span class="fm-marquee__icon material-symbols-outlined">forum</span></div>
+                                <div class="fm-marquee__part"><span class="material-symbols-outlined">forum</span><span>AI Chat</span><span class="fm-marquee__icon material-symbols-outlined">forum</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings pinned at bottom -->
+                <div class="fm-bottom">
+                    <div class="fm-item" data-screen="settings" id="nav-settings" style="border-top:none">
+                        <button class="fm-link" onclick="switchScreen('settings')">
+                            <span class="material-symbols-outlined">settings</span>Settings
+                        </button>
+                        <div class="fm-marquee">
+                            <div class="fm-marquee__inner-wrap">
+                                <div class="fm-marquee__inner">
+                                    <div class="fm-marquee__part"><span class="material-symbols-outlined">settings</span><span>Settings</span><span class="fm-marquee__icon material-symbols-outlined">settings</span></div>
+                                    <div class="fm-marquee__part"><span class="material-symbols-outlined">settings</span><span>Settings</span><span class="fm-marquee__icon material-symbols-outlined">settings</span></div>
+                                    <div class="fm-marquee__part"><span class="material-symbols-outlined">settings</span><span>Settings</span><span class="fm-marquee__icon material-symbols-outlined">settings</span></div>
+                                    <div class="fm-marquee__part"><span class="material-symbols-outlined">settings</span><span>Settings</span><span class="fm-marquee__icon material-symbols-outlined">settings</span></div>
+                                    <div class="fm-marquee__part"><span class="material-symbols-outlined">settings</span><span>Settings</span><span class="fm-marquee__icon material-symbols-outlined">settings</span></div>
+                                    <div class="fm-marquee__part"><span class="material-symbols-outlined">settings</span><span>Settings</span><span class="fm-marquee__icon material-symbols-outlined">settings</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </nav>
+    </aside>
+    
+    <!-- Unified Top App Bar -->
+    <header class="fixed top-0 right-0 w-[calc(100%-240px)] z-40 h-12 bg-[#131315] border-b border-[#2A2A2E] flex justify-between items-center px-6">
+        <div class="flex items-center gap-4 flex-1">
+            <div class="relative w-full max-w-md focus-within:ring-1 focus-within:ring-[#00F0FF] rounded">
+                <span class="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-[18px]">search</span>
+                <input id="global-search" class="w-full bg-[#0d0d0f] border-none text-[12px] px-9 py-1 text-white focus:ring-0 rounded" placeholder="Search logs, alerts, or entities..." type="text"/>
+            </div>
+        </div>
+        <div class="flex items-center gap-4">
+            <div id="context-indicator" class="hidden flex items-center gap-2 px-3 py-1 rounded bg-[#00f0ff]/10 border border-[#00f0ff]/30 text-[#00f0ff] text-[10px] font-bold">
+                <span class="w-1.5 h-1.5 rounded-full bg-[#00f0ff] animate-pulse"></span>
+                <span>CONTEXT LOADED</span>
+            </div>
+            <div class="flex items-center gap-2 pl-4 border-l border-[#2A2A2E]">
+                <div class="text-right">
+                    <p class="text-[10px] font-bold text-[#e5e1e4]">ANALYST_09</p>
+                    <p class="text-[9px] text-[#00dbe9] font-bold tracking-widest">TIER 3</p>
+                </div>
+                <div class="w-8 h-8 bg-[#47464b] rounded flex items-center justify-center overflow-hidden">
+                    <img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDtZ87IVnMAXLocwAZ7RgMH3cNUpBs9Wf2RKZFhisxtsNl6GWKd-07N8vy6btMk-5XFopEHGtZAisbmZ5cegjw1gf1Usqa3j42xc_v6iKZA2OXrSWJnvwXxmOMvMt16qpSuujp2DSeR3YNhJD3858gfw64Mgtm12Dj2vtiYrsdnbHxA6o7IETBlv74HJB9cA3xK5t2e6lOvl5jgykVT1wSc6QwwcTYjvxI2ZDQ2Uxv3FDEpbqiqWYRxN_LTdm5fGLZhJ54EvzIl45s1"/>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Content container -->
+    <main id="content-canvas" class="ml-[240px] pt-16 p-6 min-h-screen bg-[#0D0D0F]">
+        <!-- Page layout loads dynamically here -->
+    </main>
+
+    <!-- Contextual FAB -->
+    <button onclick="switchScreen('chat')" class="fixed bottom-8 right-8 w-14 h-14 bg-[#00f0ff] text-black rounded-full shadow-[0_8px_24px_rgba(0,240,255,0.3)] flex items-center justify-center hover:scale-105 transition-transform active:scale-95 group z-50">
+        <span class="material-symbols-outlined text-3xl">psychology</span>
+        <div class="absolute right-full mr-4 bg-[#201f21] text-[#e5e1e4] px-4 py-2 rounded text-[10px] font-bold uppercase tracking-wider whitespace-nowrap border border-[#2A2A2E] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            Ask SOC Assistant AI
+        </div>
+    </button>
+
+    <!-- JS ENGINE AND API IMPLEMENTATION -->
+    <script>
+        const API_BASE = "http://localhost:8000";
+        
+        // Dynamic Global State
+        window.state = {
+            activeScreen: "dashboard",
+            selectedAlertId: null,
+            selectedIncidentId: null,
+            chatHistory: [],
+            settings: {
+                openrouter_api_key: "",
+                ai_model: "anthropic/claude-sonnet-4",
+                ai_temperature: 0.3,
+                ai_max_tokens: 4096,
+                auto_refresh_interval: "30"
+            }
+        };
+
+        // Initialize App
+        async function initApp() {
+            await checkHealth();
+            await loadSettings();
+            initFlowingMenu();
+
+            // Initial view
+            switchScreen("dashboard");
+            
+            // Setup global search listener
+            document.getElementById("global-search").addEventListener("keypress", function (e) {
+                if (e.key === "Enter") {
+                    const kw = e.target.value.trim();
+                    if (kw) {
+                        window.state.searchKeyword = kw;
+                        switchScreen("alerts");
+                    }
+                }
+            });
+
+            // Set auto-refresh interval
+            const interval = parseInt(window.state.settings.auto_refresh_interval);
+            if (!isNaN(interval) && interval > 0) {
+                setInterval(() => {
+                    if (window.state.activeScreen === "dashboard") {
+                        loadDashboardData();
+                    }
+                }, interval * 1000);
+            }
+        }
+
+        async function checkHealth() {
+            try {
+                const res = await fetch(`${API_BASE}/api/dashboard/health`);
+                const data = await res.json();
+                if (data && data.status === "online") {
+                    document.getElementById("health-dot").className = "w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_#22C55E]";
+                    document.getElementById("health-text").innerHTML = "ONLINE";
+                } else {
+                    setOffline();
+                }
+            } catch (e) {
+                setOffline();
+            }
+        }
+
+        function setOffline() {
+            document.getElementById("health-dot").className = "w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_#FF4B4B]";
+            document.getElementById("health-text").innerHTML = "OFFLINE";
+        }
+
+        async function loadSettings() {
+            try {
+                const res = await fetch(`${API_BASE}/api/settings`);
+                const data = await res.json();
+                if (data && Array.isArray(data)) {
+                    data.forEach(s => {
+                        window.state.settings[s.key] = s.value;
+                    });
+                }
+            } catch (e) {
+                console.error("Error loading settings:", e);
+            }
+        }
+
+        // SCREEN ROUTER
+        function switchScreen(screenName) {
+            window.state.activeScreen = screenName;
+
+            // Update FlowingMenu active state
+            document.querySelectorAll('.fm-item').forEach(el => el.classList.remove('fm-active'));
+            const activeItem = document.getElementById(`nav-${screenName}`);
+            if (activeItem) activeItem.classList.add('fm-active');
+
+            // Update Grounded Context Fab Indicator
+            const indicator = document.getElementById("context-indicator");
+            if (window.state.selectedAlertId) {
+                indicator.classList.remove("hidden");
+                indicator.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-[#00f0ff] animate-pulse"></span><span>CONTEXT ALERT #${window.state.selectedAlertId}</span>`;
+            } else {
+                indicator.classList.add("hidden");
+            }
+
+            const canvas = document.getElementById("content-canvas");
+            
+            // Load correct layout view
+            if (screenName === "dashboard") {
+                canvas.innerHTML = getDashboardLayout();
+                loadDashboardData();
+            } else if (screenName === "alerts") {
+                canvas.innerHTML = getAlertsLayout();
+                loadAlertsData();
+            } else if (screenName === "alert_detail") {
+                canvas.innerHTML = getAlertDetailLayout();
+                loadAlertDetailData();
+            } else if (screenName === "ai_analysis") {
+                canvas.innerHTML = getAiAnalysisLayout();
+                loadAiAnalysisData();
+            } else if (screenName === "mitre") {
+                canvas.innerHTML = getMitreLayout();
+                loadMitreData();
+            } else if (screenName === "incidents") {
+                canvas.innerHTML = getIncidentsLayout();
+                loadIncidentsData();
+            } else if (screenName === "threat_intel") {
+                canvas.innerHTML = getThreatIntelLayout();
+            } else if (screenName === "chat") {
+                canvas.innerHTML = getChatLayout();
+                loadChatHistory();
+            } else if (screenName === "settings") {
+                canvas.innerHTML = getSettingsLayout();
+                loadSettingsView();
+            }
+        }
+
+        // ─── SCREEN 1: DASHBOARD CONTROLLER ───
+        function getDashboardLayout() {
+            return `
+                <div class="mb-6 flex justify-between items-end">
+                    <div>
+                        <h2 class="text-[24px] font-semibold text-white tracking-tight">Security Operations Dashboard</h2>
+                        <p class="text-[12px] text-[#b9cacb] mt-1">Real-time threat landscape and infrastructure monitoring</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="flex items-center gap-2 px-3 py-1.5 bg-[#201f21] border border-[#3b494b] text-[10px] font-bold uppercase hover:bg-[#353437] text-[#e5e1e4] rounded">
+                            <span class="material-symbols-outlined text-sm">calendar_today</span> Last 24 Hours
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- KPI metrics row -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div class="card-border bg-[#1b1b1d] p-4 relative overflow-hidden rounded">
+                        <p class="text-[10px] font-bold text-[#b9cacb] mb-1">TOTAL ALERTS</p>
+                        <h3 id="kpi-total" class="text-[24px] font-bold text-white">...</h3>
+                        <div class="absolute bottom-0 left-0 w-full h-[2px] bg-[#00f0ff]"></div>
+                    </div>
+                    <div class="card-border bg-[#1b1b1d] p-4 relative overflow-hidden border-t-2 border-t-red-500 rounded">
+                        <p class="text-[10px] font-bold text-[#b9cacb] mb-1">CRITICAL ALERTS</p>
+                        <h3 id="kpi-critical" class="text-[24px] font-bold text-red-400">...</h3>
+                        <div class="absolute bottom-0 left-0 w-full h-[2px] bg-red-500"></div>
+                    </div>
+                    <div class="card-border bg-[#1b1b1d] p-4 relative overflow-hidden border-t-2 border-t-orange-500 rounded">
+                        <p class="text-[10px] font-bold text-[#b9cacb] mb-1">ACTIVE INCIDENTS</p>
+                        <h3 id="kpi-incidents" class="text-[24px] font-bold text-orange-400">...</h3>
+                        <div class="absolute bottom-0 left-0 w-full h-[2px] bg-orange-500"></div>
+                    </div>
+                    <div class="card-border bg-[#1b1b1d] p-4 relative overflow-hidden rounded">
+                        <p class="text-[10px] font-bold text-[#b9cacb] mb-1">AI SUCCESS RATE</p>
+                        <h3 id="kpi-ai" class="text-[24px] font-bold text-[#00dbe9] glow-cyan">...</h3>
+                        <div class="absolute bottom-0 left-0 w-full h-[2px] bg-[#00dbe9]"></div>
+                    </div>
+                </div>
+
+                <!-- Charts Row -->
+                <div class="grid grid-cols-12 gap-6 mb-6">
+                    <div class="col-span-12 lg:col-span-8 card-border bg-[#1b1b1d] p-4 rounded">
+                        <h4 class="text-[10px] font-bold text-[#b9cacb] mb-4 uppercase">ALERT TREND</h4>
+                        <div id="dashboard-trend-container" class="h-48 w-full flex items-end gap-2 pt-4 border-b border-gray-700/50">
+                            <!-- Trend Bars or SVG path will be injected -->
+                        </div>
+                    </div>
+                    <div class="col-span-12 lg:col-span-4 card-border bg-[#1b1b1d] p-4 flex flex-col items-center rounded">
+                        <h4 class="text-[10px] font-bold text-[#b9cacb] self-start mb-4 uppercase">ALERTS BY SEVERITY</h4>
+                        <div id="severity-donut" class="w-full flex flex-col items-center">
+                            <!-- SVGs will be injected -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Attack Chains row -->
+                <div class="card-border bg-[#1b1b1d] p-4 mb-6 rounded">
+                    <h4 class="text-[10px] font-bold text-[#b9cacb] mb-4 uppercase">CORRELATED ATTACK CHAINS</h4>
+                    <div id="chains-list" class="flex flex-col gap-3">
+                        <p class="text-gray-400 text-sm">Scanning logs for active correlation chains...</p>
+                    </div>
+                </div>
+
+                <!-- Host and MITRE charts -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div class="card-border bg-[#1b1b1d] p-4 rounded">
+                        <h4 class="text-[10px] font-bold text-[#b9cacb] mb-4 uppercase">Top Attacked Hosts</h4>
+                        <div id="top-hosts-list" class="flex flex-col gap-4">
+                            <!-- Progress items -->
+                        </div>
+                    </div>
+                    <div class="card-border bg-[#1b1b1d] p-4 rounded">
+                        <h4 class="text-[10px] font-bold text-[#b9cacb] mb-4 uppercase">Top MITRE ATT&CK Techniques</h4>
+                        <div id="top-mitre-list" class="flex flex-col gap-4">
+                            <!-- Progress items -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Targeted Users Table -->
+                <div class="card-border bg-[#1b1b1d] rounded overflow-hidden">
+                    <div class="p-4 border-b border-[#2A2A2E] flex justify-between items-center">
+                        <h4 class="text-[10px] font-bold text-[#b9cacb] uppercase">Most Targeted User Accounts</h4>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="bg-[#121214] text-[#b9cacb] text-[10px] font-bold uppercase tracking-wider border-b border-[#2A2A2E]">
+                                    <th class="px-4 py-3">USERNAME</th>
+                                    <th class="px-4 py-3">ALERT COUNT</th>
+                                </tr>
+                            </thead>
+                            <tbody id="targeted-users-body" class="text-sm">
+                                <!-- Users rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function loadDashboardData() {
+            try {
+                const res = await fetch(`${API_BASE}/api/dashboard`);
+                const data = await res.json();
+                if (!data) return;
+
+                // Bind Metrics
+                document.getElementById("kpi-total").innerText = data.total_alerts;
+                document.getElementById("kpi-critical").innerText = data.critical_alerts;
+                document.getElementById("kpi-incidents").innerText = data.open_incidents;
+                document.getElementById("kpi-ai").innerText = `${(data.ai_success_rate * 100).toFixed(1)}%`;
+
+                // Bind Trend Chart
+                const trendContainer = document.getElementById("dashboard-trend-container");
+                if (data.alert_trend_24h && data.alert_trend_24h.length > 0) {
+                    const maxVal = Math.max(...data.alert_trend_24h.map(t => t.count), 1);
+                    trendContainer.innerHTML = data.alert_trend_24h.map(t => {
+                        const heightPct = (t.count / maxVal) * 100;
+                        const hr = t.hour.split(" ")[1].substring(0, 5);
+                        return `
+                            <div class="flex-1 flex flex-col items-center h-full justify-end">
+                                <span class="text-[10px] text-gray-500 font-bold mb-1">${t.count}</span>
+                                <div class="bg-[#00f0ff] w-full max-w-[32px] rounded-t" style="height: ${heightPct}%;"></div>
+                                <span class="text-[9px] text-[#b9cacb] mt-2">${hr}</span>
+                            </div>
+                        `;
+                    }).join("");
+                } else {
+                    trendContainer.innerHTML = `<p class="text-gray-400 text-sm m-auto">No trend logs logged in last 24h.</p>`;
+                }
+
+                // Bind Severity Donut SVG
+                const donutContainer = document.getElementById("severity-donut");
+                const sevData = data.alerts_by_severity || {};
+                const total = data.total_alerts || 1;
+                
+                const critVal = sevData.Critical || 0;
+                const highVal = sevData.High || 0;
+                const medVal = sevData.Medium || 0;
+                const lowVal = sevData.Low || 0;
+                const infoVal = sevData.Informational || 0;
+
+                const critPct = ((critVal / total) * 100).toFixed(0);
+                const highPct = ((highVal / total) * 100).toFixed(0);
+                const medPct = ((medVal / total) * 100).toFixed(0);
+                const lowPct = ((lowVal / total) * 100).toFixed(0);
+
+                donutContainer.innerHTML = `
+                    <div class="relative w-40 h-40">
+                        <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                            <circle cx="18" cy="18" fill="transparent" r="15.915" stroke="#353437" stroke-width="4"></circle>
+                            <circle cx="18" cy="18" fill="transparent" r="15.915" stroke="#FF4B4B" stroke-dasharray="${critPct} ${100-critPct}" stroke-dashoffset="0" stroke-width="4"></circle>
+                            <circle cx="18" cy="18" fill="transparent" r="15.915" stroke="#FFA500" stroke-dasharray="${highPct} ${100-highPct}" stroke-dashoffset="-${critPct}" stroke-width="4"></circle>
+                        </svg>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center">
+                            <span class="text-[9px] font-bold text-gray-500">TOTAL</span>
+                            <span class="text-xl font-bold text-white">${data.total_alerts}</span>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-x-6 gap-y-2 mt-4 w-full px-4 text-xs">
+                        <div class="flex items-center gap-2"><div class="w-2 h-2 bg-red-500 rounded-full"></div><span>Critical: ${critVal} (${critPct}%)</span></div>
+                        <div class="flex items-center gap-2"><div class="w-2 h-2 bg-orange-500 rounded-full"></div><span>High: ${highVal} (${highPct}%)</span></div>
+                        <div class="flex items-center gap-2"><div class="w-2 h-2 bg-yellow-500 rounded-full"></div><span>Medium: ${medVal}</span></div>
+                        <div class="flex items-center gap-2"><div class="w-2 h-2 bg-[#00f0ff] rounded-full"></div><span>Low: ${lowVal}</span></div>
+                    </div>
+                `;
+
+                // Bind Attack Chains
+                const chainsList = document.getElementById("chains-list");
+                if (data.attack_chains && data.attack_chains.length > 0) {
+                    chainsList.innerHTML = data.attack_chains.map(c => `
+                        <div class="bg-[#201f21] p-4 border border-red-500/20 hover:border-red-500/50 transition-all rounded">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <h5 class="text-white font-bold text-sm flex items-center gap-2">
+                                        ⚠️ ${c.name} (${c.chain_id}) 
+                                        <span class="px-2 py-0.5 bg-red-600 text-black text-[9px] font-bold rounded">CRITICAL</span>
+                                    </h5>
+                                    <p class="text-[12px] text-gray-400 mt-1">${c.description}</p>
+                                </div>
+                                <div class="text-right text-[11px] text-gray-400">
+                                    <p><b>Host:</b> <code>${c.host}</code></p>
+                                    <p><b>Origin IP:</b> <code>${c.attacker}</code></p>
+                                </div>
+                            </div>
+                            <div class="flex gap-2 flex-wrap mt-3">
+                                ${c.timeline.map((t, idx) => `
+                                    <div class="px-3 py-1 bg-[#131315] border border-gray-700 rounded text-xs">
+                                        <span class="text-red-400 font-bold">${idx + 1}.</span> 
+                                        <span class="text-gray-300 font-data-mono">${t.mitre}</span>
+                                        <span class="text-[10px] text-gray-500">(${t.time.substring(11, 19)})</span>
+                                    </div>
+                                `).join('<span class="text-gray-600 self-center">➔</span>')}
+                            </div>
+                        </div>
+                    `).join("");
+                } else {
+                    chainsList.innerHTML = `<p class="text-green-500 font-bold text-sm">🟢 No multi-stage attack chains detected in current correlation tables.</p>`;
+                }
+
+                // Bind Top Hosts
+                const hostsList = document.getElementById("top-hosts-list");
+                if (data.top_attacked_hosts && data.top_attacked_hosts.length > 0) {
+                    const maxH = Math.max(...data.top_attacked_hosts.map(h => h.count), 1);
+                    hostsList.innerHTML = data.top_attacked_hosts.map(h => {
+                        const pct = (h.count / maxH) * 100;
+                        return `
+                            <div class="space-y-1">
+                                <div class="flex justify-between text-xs">
+                                    <span class="text-white font-data-mono">${h.host}</span>
+                                    <span class="text-[#00f0ff] font-bold">${h.count} alerts</span>
+                                </div>
+                                <div class="w-full bg-[#201f21] h-1.5 rounded-full overflow-hidden">
+                                    <div class="bg-[#00f0ff] h-full" style="width: ${pct}%"></div>
+                                </div>
+                            </div>
+                        `;
+                    }).join("");
+                } else {
+                    hostsList.innerHTML = `<p class="text-gray-400 text-xs">No records available.</p>`;
+                }
+
+                // Bind Top MITRE
+                const mitreList = document.getElementById("top-mitre-list");
+                if (data.top_mitre_techniques && data.top_mitre_techniques.length > 0) {
+                    const maxM = Math.max(...data.top_mitre_techniques.map(m => m.count), 1);
+                    mitreList.innerHTML = data.top_mitre_techniques.map(m => {
+                        const pct = (m.count / maxM) * 100;
+                        return `
+                            <div class="space-y-1">
+                                <div class="flex justify-between text-xs">
+                                    <span class="text-white">${m.id} (${m.name})</span>
+                                    <span class="text-[#00dbe9] font-bold">${m.count} hits</span>
+                                </div>
+                                <div class="w-full bg-[#201f21] h-1.5 rounded-full overflow-hidden">
+                                    <div class="bg-[#00dbe9] h-full" style="width: ${pct}%"></div>
+                                </div>
+                            </div>
+                        `;
+                    }).join("");
+                } else {
+                    mitreList.innerHTML = `<p class="text-gray-400 text-xs">No records available.</p>`;
+                }
+
+                // Bind Targeted Users
+                const usersBody = document.getElementById("targeted-users-body");
+                if (data.most_targeted_users && data.most_targeted_users.length > 0) {
+                    usersBody.innerHTML = data.most_targeted_users.map(u => `
+                        <tr class="border-b border-gray-800 hover:bg-[#201f21]/50 transition-colors">
+                            <td class="px-4 py-3 font-bold text-gray-300 font-data-mono">${u.username || "N/A"}</td>
+                            <td class="px-4 py-3 font-semibold text-[#00f0ff]">${u.count}</td>
+                        </tr>
+                    `).join("");
+                } else {
+                    usersBody.innerHTML = `<tr><td colspan="2" class="px-4 py-3 text-center text-gray-500 text-xs">No records logged.</td></tr>`;
+                }
+
+            } catch (e) {
+                console.error("Dashboard fetch error:", e);
+            }
+        }
+
+        // ─── SCREEN 2: ALERTS LISTING CONTROLLER ───
+        function getAlertsLayout() {
+            return `
+                <div class="mb-6">
+                    <h2 class="text-[24px] font-semibold text-white tracking-tight">🚨 Alerts Management Console</h2>
+                    <p class="text-[12px] text-[#b9cacb] mt-1">Ingest, search, and analyze alerts across all endpoints</p>
+                </div>
+                
+                <!-- Filter Console -->
+                <div class="card-border bg-[#1b1b1d] p-4 rounded mb-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div>
+                            <label class="block text-[10px] font-bold text-[#b9cacb] mb-1">HOST NAME</label>
+                            <input id="filter-host" class="w-full bg-[#0d0d0f] border-gray-700 text-xs text-white rounded focus:ring-[#00f0ff]" type="text" placeholder="e.g. WEB-SERVER-01"/>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-[#b9cacb] mb-1">SOURCE IP</label>
+                            <input id="filter-ip" class="w-full bg-[#0d0d0f] border-gray-700 text-xs text-white rounded focus:ring-[#00f0ff]" type="text" placeholder="e.g. 185.220.101.42"/>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-[#b9cacb] mb-1">SEVERITY</label>
+                            <select id="filter-severity" class="w-full bg-[#0d0d0f] border-gray-700 text-xs text-white rounded focus:ring-[#00f0ff]">
+                                <option value="">All Severities</option>
+                                <option value="Critical">Critical</option>
+                                <option value="High">High</option>
+                                <option value="Medium">Medium</option>
+                                <option value="Low">Low</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center mt-4">
+                        <button onclick="loadAlertsData()" class="px-4 py-2 bg-[#00f0ff] text-black font-bold text-xs uppercase tracking-wider rounded hover:opacity-90 transition-all">
+                            Apply Search Filters
+                        </button>
+                        <a id="export-btn" href="${API_BASE}/api/alerts/export" target="_blank" class="px-4 py-2 bg-[#201f21] border border-gray-700 text-[#00f0ff] font-bold text-xs uppercase tracking-wider rounded hover:bg-[#353437] transition-all">
+                            📥 Export CSV
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Table Container -->
+                <div class="card-border bg-[#1b1b1d] rounded overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="bg-[#121214] text-[#b9cacb] text-[10px] font-bold uppercase tracking-wider border-b border-[#2A2A2E]">
+                                    <th class="px-4 py-3">ID</th>
+                                    <th class="px-4 py-3">TIMESTAMP</th>
+                                    <th class="px-4 py-3">SEVERITY</th>
+                                    <th class="px-4 py-3">HOST</th>
+                                    <th class="px-4 py-3">MITRE ID</th>
+                                    <th class="px-4 py-3">DESCRIPTION</th>
+                                    <th class="px-4 py-3">STATUS</th>
+                                    <th class="px-4 py-3 text-right">ACTIONS</th>
+                                </tr>
+                            </thead>
+                            <tbody id="alerts-table-body" class="text-xs">
+                                <tr><td colspan="8" class="px-4 py-6 text-center text-gray-500">Querying database alerts...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function loadAlertsData() {
+            try {
+                // Read filters
+                const host = document.getElementById("filter-host").value.trim();
+                const ip = document.getElementById("filter-ip").value.trim();
+                const severity = document.getElementById("filter-severity").value;
+                
+                const params = new URLSearchParams();
+                if (host) params.append("host", host);
+                if (ip) params.append("source_ip", ip);
+                if (severity) params.append("severity", severity);
+                if (window.state.searchKeyword) {
+                    params.append("keyword", window.state.searchKeyword);
+                    window.state.searchKeyword = null; // Clear search keyword after query
+                }
+
+                // Update CSV link
+                const csvLink = `${API_BASE}/api/alerts/export?${params.toString()}`;
+                document.getElementById("export-btn").setAttribute("href", csvLink);
+
+                const res = await fetch(`${API_BASE}/api/alerts?${params.toString()}`);
+                const data = await res.json();
+                
+                const body = document.getElementById("alerts-table-body");
+                if (data && data.length > 0) {
+                    body.innerHTML = data.map(a => {
+                        const sevColors = {
+                            Critical: "border-l-4 border-l-red-500 text-red-400",
+                            High: "border-l-4 border-l-orange-500 text-orange-400",
+                            Medium: "border-l-4 border-l-yellow-500 text-yellow-400",
+                            Low: "border-l-4 border-l-cyan-500 text-cyan-400"
+                        };
+                        const colorClass = sevColors[a.severity] || "text-gray-400";
+                        return `
+                            <tr class="border-b border-gray-800 hover:bg-[#201f21]/50 transition-colors">
+                                <td class="px-4 py-3 font-data-mono font-bold text-gray-400">${a.id}</td>
+                                <td class="px-4 py-3 text-gray-400 whitespace-nowrap">${a.timestamp.substring(0, 19).replace('T', ' ')}</td>
+                                <td class="px-4 py-3 font-bold ${colorClass}">${a.severity}</td>
+                                <td class="px-4 py-3 font-data-mono text-gray-300 font-bold">${a.host}</td>
+                                <td class="px-4 py-3 font-data-mono text-[#00dbe9]">${a.mitre_technique_id || "N/A"}</td>
+                                <td class="px-4 py-3 text-gray-300">${a.description}</td>
+                                <td class="px-4 py-3 font-bold">${a.status}</td>
+                                <td class="px-4 py-3 text-right whitespace-nowrap">
+                                    <button onclick="pivotToAlert(${a.id})" class="px-2 py-1 bg-[#201f21] border border-gray-700 text-[#00f0ff] font-bold text-[10px] uppercase rounded hover:bg-gray-700 transition-all">Inspect</button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join("");
+                } else {
+                    body.innerHTML = `<tr><td colspan="8" class="px-4 py-6 text-center text-gray-500">No alerts matching active filters found.</td></tr>`;
+                }
+            } catch (e) {
+                console.error("Alerts fetch error:", e);
+            }
+        }
+
+        function pivotToAlert(id) {
+            window.state.selectedAlertId = id;
+            switchScreen("alert_detail");
+        }
+
+        // ─── SCREEN 3: ALERT DETAIL VIEW CONTROLLER ───
+        function getAlertDetailLayout() {
+            return `
+                <div class="mb-6">
+                    <h2 class="text-[24px] font-semibold text-white tracking-tight">🔍 Alert Details & Analysis</h2>
+                    <p class="text-[12px] text-[#b9cacb] mt-1">Deep inspection, dynamic assignments, and correlated timeline</p>
+                </div>
+                
+                <div id="detail-loader" class="text-gray-400 text-center py-10">Select an alert from the Alerts page to load details.</div>
+                
+                <div id="detail-content" class="hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 id="detail-title" class="text-xl font-bold text-white">...</h3>
+                        <div class="flex gap-2">
+                            <button onclick="triggerAnalysis()" class="px-4 py-2 bg-[#00f0ff] text-black font-bold text-xs uppercase tracking-wider rounded hover:opacity-90 transition-all">
+                                🧠 Run AI Analysis
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                        <div class="card-border bg-[#1b1b1d] p-4 rounded">
+                            <h4 class="text-[10px] font-bold text-[#b9cacb] mb-4 uppercase">Metadata Context</h4>
+                            <table class="w-full text-xs text-gray-300 space-y-2">
+                                <tr><td class="py-1 font-bold text-gray-500">Timestamp:</td><td id="d-time" class="py-1">...</td></tr>
+                                <tr><td class="py-1 font-bold text-gray-500">Sensor:</td><td id="d-src" class="py-1">...</td></tr>
+                                <tr><td class="py-1 font-bold text-gray-500">Rule ID:</td><td id="d-rule" class="py-1 font-data-mono">...</td></tr>
+                                <tr><td class="py-1 font-bold text-gray-500">Event ID:</td><td id="d-event" class="py-1 font-data-mono">...</td></tr>
+                                <tr><td class="py-1 font-bold text-gray-500">Host:</td><td id="d-host" class="py-1 font-data-mono font-bold">...</td></tr>
+                                <tr><td class="py-1 font-bold text-gray-500">Agent:</td><td id="d-agent" class="py-1 font-data-mono">...</td></tr>
+                            </table>
+                        </div>
+                        <div class="card-border bg-[#1b1b1d] p-4 rounded">
+                            <h4 class="text-[10px] font-bold text-[#b9cacb] mb-4 uppercase">Network & User Context</h4>
+                            <table class="w-full text-xs text-gray-300 space-y-2">
+                                <tr><td class="py-1 font-bold text-gray-500">Severity:</td><td id="d-sev" class="py-1 font-bold">...</td></tr>
+                                <tr><td class="py-1 font-bold text-gray-500">Source IP:</td><td id="d-sip" class="py-1 font-data-mono">...</td></tr>
+                                <tr><td class="py-1 font-bold text-gray-500">Dest IP:</td><td id="d-dip" class="py-1 font-data-mono">...</td></tr>
+                                <tr><td class="py-1 font-bold text-gray-500">Username:</td><td id="d-user" class="py-1 font-data-mono">...</td></tr>
+                                <tr><td class="py-1 font-bold text-gray-500">MITRE Tactic:</td><td id="d-mitre" class="py-1">...</td></tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Operations Box -->
+                    <div class="card-border bg-[#1b1b1d] p-4 rounded mb-6 flex justify-between gap-4 flex-wrap">
+                        <div>
+                            <label class="block text-[10px] font-bold text-[#b9cacb] mb-1">ASSIGNED TO</label>
+                            <div class="flex gap-2">
+                                <input id="assign-analyst-input" class="bg-[#0d0d0f] border-gray-700 text-xs text-white rounded focus:ring-[#00f0ff]" type="text" placeholder="Analyst Name"/>
+                                <button onclick="assignAlert()" class="px-3 py-1 bg-gray-700 text-white rounded text-xs font-bold hover:bg-gray-600">Update</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-[#b9cacb] mb-1">STATUS</label>
+                            <select id="status-select" onchange="updateAlertStatus()" class="bg-[#0d0d0f] border-gray-700 text-xs text-white rounded focus:ring-[#00f0ff]">
+                                <option value="New">New</option>
+                                <option value="Investigating">Investigating</option>
+                                <option value="Resolved">Resolved</option>
+                                <option value="Closed">Closed</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Raw Logs -->
+                    <div class="card-border bg-[#1b1b1d] p-4 rounded">
+                        <h4 class="text-[10px] font-bold text-[#b9cacb] mb-2 uppercase">Raw Log File</h4>
+                        <pre id="d-raw" class="bg-[#0d0d0f] p-4 border border-gray-800 rounded font-data-mono text-xs text-green-400 overflow-x-auto whitespace-pre-wrap"></pre>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function loadAlertDetailData() {
+            const id = window.state.selectedAlertId;
+            if (!id) return;
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/alerts/${id}`);
+                const data = await res.json();
+                if (!data) return;
+
+                document.getElementById("detail-loader").classList.add("hidden");
+                const content = document.getElementById("detail-content");
+                content.classList.remove("hidden");
+
+                document.getElementById("detail-title").innerText = `Alert #${data.id}: ${data.description}`;
+                document.getElementById("d-time").innerText = data.timestamp.replace('T', ' ');
+                document.getElementById("d-src").innerText = data.source;
+                document.getElementById("d-rule").innerText = data.rule_id || "N/A";
+                document.getElementById("d-event").innerText = data.event_id || "N/A";
+                document.getElementById("d-host").innerText = data.host;
+                document.getElementById("d-agent").innerText = data.agent || "N/A";
+                document.getElementById("d-sev").innerText = data.severity;
+                document.getElementById("d-sip").innerText = data.source_ip || "N/A";
+                document.getElementById("d-dip").innerText = data.dest_ip || "N/A";
+                document.getElementById("d-user").innerText = data.username || "N/A";
+                document.getElementById("d-mitre").innerText = data.mitre_technique_id ? `${data.mitre_technique_id} - ${data.mitre_technique_name}` : "N/A";
+                document.getElementById("d-raw").innerText = data.raw_log;
+
+                document.getElementById("assign-analyst-input").value = data.assigned_to || "";
+                document.getElementById("status-select").value = data.status || "New";
+
+            } catch (e) {
+                console.error("Alert detail fetch error:", e);
+            }
+        }
+
+        async function assignAlert() {
+            const id = window.state.selectedAlertId;
+            const analyst = document.getElementById("assign-analyst-input").value.trim();
+            if (!id || !analyst) return;
+
+            try {
+                await fetch(`${API_BASE}/api/alerts/${id}/assign?analyst=${encodeURIComponent(analyst)}`, {method: "PUT"});
+                alert(`Case assigned to ${analyst}`);
+                loadAlertDetailData();
+            } catch (e) {
+                console.error("Assign error:", e);
+            }
+        }
+
+        async function updateAlertStatus() {
+            const id = window.state.selectedAlertId;
+            const status = document.getElementById("status-select").value;
+            if (!id) return;
+
+            try {
+                await fetch(`${API_BASE}/api/alerts/${id}/status?status=${encodeURIComponent(status)}`, {method: "PUT"});
+                alert(`Status updated to ${status}`);
+                loadAlertDetailData();
+            } catch (e) {
+                console.error("Status update error:", e);
+            }
+        }
+
+        async function triggerAnalysis() {
+            const id = window.state.selectedAlertId;
+            if (!id) return;
+
+            try {
+                await fetch(`${API_BASE}/api/analyze`, {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({alert_id: id})
+                });
+                switchScreen("ai_analysis");
+            } catch (e) {
+                console.error("Analysis trigger error:", e);
+            }
+        }
+
+        // ─── SCREEN 4: AI INCIDENT ANALYSIS CONTROLLER ───
+        function getAiAnalysisLayout() {
+            return `
+                <div class="mb-6">
+                    <h2 class="text-[24px] font-semibold text-white tracking-tight">🧠 AI Security Incident Analysis</h2>
+                    <p class="text-[12px] text-[#b9cacb] mt-1">Deep learning analysis of raw security alerts, artifacts, and mitigation suggestions</p>
+                </div>
+                
+                <div id="ai-loader" class="text-gray-400 text-center py-10">Select an alert to view its AI triage report.</div>
+                
+                <div id="ai-content" class="hidden">
+                    <div class="grid grid-cols-12 gap-6 mb-6">
+                        <!-- Summary -->
+                        <div class="col-span-12 lg:col-span-9 card-border bg-[#1b1b1d] p-4 rounded">
+                            <h3 class="text-lg font-bold text-white mb-2">Executive Threat Assessment Summary</h3>
+                            <p id="ai-summary" class="text-gray-300 leading-relaxed text-sm">...</p>
+                        </div>
+                        
+                        <!-- Confidence Gauge -->
+                        <div class="col-span-12 lg:col-span-3 card-border bg-[#1b1b1d] p-4 flex flex-col items-center justify-center text-center rounded">
+                            <span class="text-[9px] font-bold text-gray-500 uppercase mb-2">Confidence Level</span>
+                            <div id="ai-gauge" class="text-3xl font-bold text-[#00f0ff] glow-cyan">0%</div>
+                            <small id="ai-gauge-reason" class="text-[10px] text-[#b9cacb] mt-2 leading-tight">...</small>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Mapping and Evidence -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div class="card-border bg-[#1b1b1d] p-4 rounded">
+                            <h4 class="text-[10px] font-bold text-[#b9cacb] mb-4 uppercase">MITRE ATT&CK Alignment</h4>
+                            <div class="p-3 bg-[#201f21] border border-gray-700 rounded mb-3">
+                                <span id="ai-mitre-title" class="text-[#00f0ff] font-bold text-xs">...</span>
+                                <p id="ai-mitre-desc" class="text-xs text-gray-400 mt-2">...</p>
+                            </div>
+                            <div class="flex justify-between text-xs text-[#b9cacb]">
+                                <span><b>Attack Stage:</b> <span id="ai-stage">...</span></span>
+                            </div>
+                        </div>
+                        <div class="card-border bg-[#1b1b1d] p-4 rounded">
+                            <h4 class="text-[10px] font-bold text-[#b9cacb] mb-4 uppercase">Observed Evidence Data</h4>
+                            <ul id="ai-evidence-list" class="text-xs text-gray-300 space-y-2">
+                                <!-- Evidence items -->
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Facts vs Assumptions -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div class="card-border bg-[#1b1b1d] p-4 rounded">
+                            <h4 class="text-[10px] font-bold text-green-400 mb-4 uppercase">Facts (Directly Logged)</h4>
+                            <ul id="ai-facts-list" class="text-xs text-gray-300 space-y-2">
+                                <!-- Facts -->
+                            </ul>
+                        </div>
+                        <div class="card-border bg-[#1b1b1d] p-4 rounded">
+                            <h4 class="text-[10px] font-bold text-yellow-400 mb-4 uppercase">Assumptions (Inferred Attack Context)</h4>
+                            <ul id="ai-assumptions-list" class="text-xs text-gray-300 space-y-2">
+                                <!-- Assumptions -->
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Extracted IOCs -->
+                    <div class="card-border bg-[#1b1b1d] p-4 rounded mb-6">
+                        <h4 class="text-[10px] font-bold text-[#b9cacb] mb-4 uppercase">Extracted Indicators of Compromise (IOCs)</h4>
+                        <div id="ai-iocs-list" class="flex flex-col gap-2">
+                            <!-- IOC items -->
+                        </div>
+                    </div>
+
+                    <!-- Recommendations and Remediation Steps -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="card-border bg-[#1b1b1d] p-4 rounded">
+                            <h4 class="text-[10px] font-bold text-[#b9cacb] mb-4 uppercase">Remediation Action Items</h4>
+                            <ul id="ai-recs-list" class="text-xs text-gray-300 space-y-2">
+                                <!-- Recs -->
+                            </ul>
+                        </div>
+                        <div class="card-border bg-[#1b1b1d] p-4 rounded">
+                            <h4 class="text-[10px] font-bold text-[#b9cacb] mb-4 uppercase">Analyst Next Steps</h4>
+                            <ul id="ai-steps-list" class="text-xs text-gray-300 space-y-2">
+                                <!-- Steps -->
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function loadAiAnalysisData() {
+            const id = window.state.selectedAlertId;
+            if (!id) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/api/analyze/alert/${id}`);
+                const data = await res.json();
+                
+                if (!data) return;
+
+                if (data.status === "queued" || data.status === "running") {
+                    document.getElementById("ai-loader").innerText = `AI Analysis state: ${data.status.toUpperCase()}. Refreshing...`;
+                    setTimeout(loadAiAnalysisData, 3000);
+                    return;
+                }
+
+                if (data.status === "failed") {
+                    document.getElementById("ai-loader").innerText = `AI Analysis failed: ${data.error_message}. Run again from Details page.`;
+                    return;
+                }
+
+                document.getElementById("ai-loader").classList.add("hidden");
+                document.getElementById("ai-content").classList.remove("hidden");
+
+                const result = data.result;
+                if (!result) return;
+
+                document.getElementById("ai-summary").innerText = result.summary;
+                document.getElementById("ai-gauge").innerText = `${(result.confidence * 100).toFixed(0)}%`;
+                document.getElementById("ai-gauge-reason").innerText = result.confidence_reason || "";
+                
+                document.getElementById("ai-stage").innerText = result.attack_stage || "Unknown";
+
+                const mit = result.mitre || {};
+                document.getElementById("ai-mitre-title").innerText = `${mit.technique_id || "N/A"} - ${mit.technique || "N/A"}`;
+                document.getElementById("ai-mitre-desc").innerText = mit.description || "No technique detail mapped.";
+
+                // Evidence
+                const evList = document.getElementById("ai-evidence-list");
+                evList.innerHTML = (result.evidence || []).map(e => `<li>✅ ${e}</li>`).join("");
+
+                // Facts vs Assumptions
+                const facts = result.facts_vs_assumptions?.facts || [];
+                const assumptions = result.facts_vs_assumptions?.assumptions || [];
+                document.getElementById("ai-facts-list").innerHTML = facts.map(f => `<li>• ${f}</li>`).join("");
+                document.getElementById("ai-assumptions-list").innerHTML = assumptions.map(a => `<li>• ${a}</li>`).join("");
+
+                // IOCs
+                const iocsList = document.getElementById("ai-iocs-list");
+                if (result.iocs && result.iocs.length > 0) {
+                    iocsList.innerHTML = result.iocs.map(ioc => `
+                        <div class="px-3 py-2 bg-[#201f21] border border-gray-700 rounded text-xs flex justify-between font-data-mono">
+                            <span class="text-red-400 font-bold">${ioc.type}</span>
+                            <span class="text-gray-300 font-bold">${ioc.value}</span>
+                        </div>
+                    `).join("");
+                } else {
+                    iocsList.innerHTML = `<p class="text-xs text-gray-500">No threat indicators extracted.</p>`;
+                }
+
+                // Recs & Steps
+                document.getElementById("ai-recs-list").innerHTML = (result.recommendations || []).map(r => `<li>• ${r}</li>`).join("");
+                document.getElementById("ai-steps-list").innerHTML = (result.investigation_steps || []).map(s => `<li>${s}</li>`).join("");
+
+            } catch (e) {
+                console.error("AI Analysis fetch error:", e);
+                document.getElementById("ai-loader").innerText = "No AI analysis triggered for this alert. Run analysis from the Alert Detail page.";
+            }
+        }
+
+        // ─── SCREEN 5: MITRE ATT&CK NAVIGATOR CONTROLLER ───
+        function getMitreLayout() {
+            return `
+                <div class="mb-6">
+                    <h2 class="text-[24px] font-semibold text-white tracking-tight">🌐 MITRE ATT&CK Matrix Navigator</h2>
+                    <p class="text-[12px] text-[#b9cacb] mt-1">Cross-correlate alerts to enterprise tactics, techniques, and sub-techniques</p>
+                </div>
+
+                <div id="mitre-loader" class="text-gray-400 text-center py-6">Retrieving ATT&CK techniques...</div>
+                
+                <!-- Tactics Grid Scroll container -->
+                <div id="mitre-matrix-container" class="hidden overflow-x-auto custom-scrollbar flex gap-4 pb-6 select-none">
+                    <!-- Matrix Tactics columns will load here -->
+                </div>
+
+                <div class="card-border bg-[#1b1b1d] p-4 rounded mt-6">
+                    <h3 class="text-sm font-bold text-white mb-2 uppercase">Technique Detail & Active Alerts</h3>
+                    <div id="mitre-detail" class="text-gray-400 text-xs">
+                        Click on any highlighted technique inside the matrix above to view mappings.
+                    </div>
+                </div>
+            `;
+        }
+
+        async function loadMitreData() {
+            try {
+                // Fetch tactics and alert frequency stats
+                const tRes = await fetch(`${API_BASE}/api/mitre/tactics`);
+                const tactics = await tRes.json();
+                
+                const sRes = await fetch(`${API_BASE}/api/mitre/stats`);
+                const stats = await sRes.json() || {};
+
+                if (!tactics) return;
+
+                document.getElementById("mitre-loader").classList.add("hidden");
+                const container = document.getElementById("mitre-matrix-container");
+                container.classList.remove("hidden");
+
+                container.innerHTML = tactics.map(t => {
+                    const techItems = t.techniques.map(tech => {
+                        const count = stats[tech.technique_id] || 0;
+                        const hasAlerts = count > 0;
+                        
+                        let borderStyle = "border: 1px solid #2A2A2E;";
+                        let bgStyle = "background-color: #1b1b1d;";
+                        let badge = "";
+                        
+                        if (hasAlerts) {
+                            borderStyle = "border: 1px solid #FF4B4B;";
+                            bgStyle = "background-color: rgba(255, 75, 75, 0.1); cursor: pointer;";
+                            badge = `<span class="bg-red-500 text-black font-bold px-1.5 py-0.5 rounded-full text-[9px]">${count}</span>`;
+                        }
+
+                        return `
+                            <div onclick="selectTechnique('${tech.technique_id}')" class="p-2 rounded mb-2 text-[10.5px] transition-all flex justify-between items-start" style="${borderStyle} ${bgStyle}">
+                                <div class="text-[#e5e1e4]">
+                                    <p class="font-data-mono font-bold text-gray-400">${tech.technique_id}</p>
+                                    <p class="mt-1">${tech.name}</p>
+                                </div>
+                                ${badge}
+                            </div>
+                        `;
+                    }).join("");
+
+                    return `
+                        <div class="min-w-[200px] flex-1 flex flex-col">
+                            <div class="p-3 bg-[#201f21] border-b border-[#2A2A2E] text-center mb-3 rounded-t">
+                                <p class="text-xs font-bold text-white">${t.name}</p>
+                                <span class="text-[9px] text-[#00f0ff] font-bold font-data-mono">${t.tactic_id}</span>
+                            </div>
+                            <div class="flex-1 overflow-y-auto max-h-[400px] custom-scrollbar">
+                                ${techItems}
+                            </div>
+                        </div>
+                    `;
+                }).join("");
+
+            } catch (e) {
+                console.error("MITRE matrix load error:", e);
+            }
+        }
+
+        async function selectTechnique(techId) {
+            const detail = document.getElementById("mitre-detail");
+            detail.innerHTML = `Loading details for ${techId}...`;
+
+            try {
+                const res = await fetch(`${API_BASE}/api/mitre/techniques/${techId}`);
+                const tech = await res.json();
+                
+                const alertRes = await fetch(`${API_BASE}/api/alerts?mitre_technique_id=${techId}`);
+                const alerts = await alertRes.json();
+
+                if (!tech) return;
+
+                let alertRows = `<p class="text-xs text-gray-500 mt-2">No active alerts map to this technique.</p>`;
+                if (alerts && alerts.length > 0) {
+                    alertRows = alerts.map(a => `
+                        <div onclick="pivotToAlert(${a.id})" class="p-2 bg-[#201f21] border border-gray-700 hover:border-[#00f0ff] rounded cursor-pointer text-xs mt-2 flex justify-between">
+                            <span class="text-white font-bold">Alert #${a.id} on host ${a.host}</span>
+                            <span class="text-gray-400">${a.description}</span>
+                        </div>
+                    `).join("");
+                }
+
+                detail.innerHTML = `
+                    <div class="space-y-2">
+                        <h4 class="text-sm font-bold text-white">${tech.technique_id}: ${tech.name}</h4>
+                        <p class="text-gray-300">${tech.description}</p>
+                        <p class="text-xs text-yellow-400">💡 <b>Detection Advice:</b> ${tech.detection}</p>
+                        <div class="mt-4 pt-4 border-t border-gray-800">
+                            <h5 class="text-xs font-bold text-gray-400 uppercase">Linked Active Logs (${alerts.length})</h5>
+                            ${alertRows}
+                        </div>
+                    </div>
+                `;
+            } catch (e) {
+                detail.innerHTML = `Failed loading details: ${e}`;
+            }
+        }
+
+        // ─── SCREEN 6: INCIDENTS PAGE CONTROLLER ───
+        function getIncidentsLayout() {
+            return `
+                <div class="mb-6">
+                    <h2 class="text-[24px] font-semibold text-white tracking-tight">📂 Incident Case File Manager</h2>
+                    <p class="text-[12px] text-[#b9cacb] mt-1">Collate alerts, manage lifecycle investigations, and export reports</p>
+                </div>
+
+                <div class="grid grid-cols-12 gap-6">
+                    <!-- Incidents List -->
+                    <div class="col-span-12 lg:col-span-5 flex flex-col gap-6">
+                        <!-- Create New Incident Case -->
+                        <div class="card-border bg-[#1b1b1d] p-4 rounded">
+                            <h3 class="text-xs font-bold text-white mb-4 uppercase">Log New Incident</h3>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-[#b9cacb] mb-1">INCIDENT TITLE</label>
+                                    <input id="inc-title" class="w-full bg-[#0d0d0f] border-gray-700 text-xs text-white rounded focus:ring-[#00f0ff]" type="text" placeholder="e.g. Critical App Server SQL Injection"/>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-[#b9cacb] mb-1">SEVERITY</label>
+                                    <select id="inc-severity" class="w-full bg-[#0d0d0f] border-gray-700 text-xs text-white rounded focus:ring-[#00f0ff]">
+                                        <option value="Critical">Critical</option>
+                                        <option value="High">High</option>
+                                        <option value="Medium">Medium</option>
+                                        <option value="Low">Low</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-[#b9cacb] mb-1">DESCRIPTION</label>
+                                    <textarea id="inc-desc" class="w-full bg-[#0d0d0f] border-gray-700 text-xs text-white rounded focus:ring-[#00f0ff] h-16" placeholder="Incident scope..."></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-[#b9cacb] mb-1">LINKED ALERT ID (Comma Separated)</label>
+                                    <input id="inc-alerts" class="w-full bg-[#0d0d0f] border-gray-700 text-xs text-white rounded focus:ring-[#00f0ff]" type="text" placeholder="e.g. 5, 6, 7"/>
+                                </div>
+                                <button onclick="createIncident()" class="w-full py-2 bg-[#00f0ff] text-black font-bold text-xs uppercase tracking-wider rounded hover:opacity-90 transition-all">
+                                    File Incident Case
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Active Cases -->
+                        <div class="card-border bg-[#1b1b1d] p-4 rounded">
+                            <h3 class="text-xs font-bold text-white mb-4 uppercase">Logged Incident Cases</h3>
+                            <div id="incidents-list" class="flex flex-col gap-2 max-h-[300px] overflow-y-auto custom-scrollbar">
+                                <p class="text-xs text-gray-500">Querying cases...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Incident Report display -->
+                    <div class="col-span-12 lg:col-span-7 card-border bg-[#1b1b1d] p-4 rounded">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xs font-bold text-white uppercase">Incident Report Section</h3>
+                            <button id="gen-report-btn" class="hidden px-3 py-1 bg-[#00f0ff] text-black font-bold text-[11px] uppercase rounded hover:opacity-90" onclick="generateReport()">🧠 Generate Report</button>
+                        </div>
+                        <div id="report-details" class="text-gray-400 text-xs space-y-4">
+                            Select an incident case from the list to view.
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function loadIncidentsData() {
+            try {
+                const res = await fetch(`${API_BASE}/api/incidents`);
+                const data = await res.json();
+                
+                const list = document.getElementById("incidents-list");
+                if (data && data.length > 0) {
+                    list.innerHTML = data.map(inc => `
+                        <div onclick="selectIncident(${inc.id})" class="p-3 bg-[#201f21] border border-gray-800 hover:border-[#00f0ff] rounded cursor-pointer transition-all">
+                            <div class="flex justify-between items-start">
+                                <span class="text-white font-bold text-xs">${inc.title}</span>
+                                <span class="px-2 py-0.5 bg-orange-600 text-black text-[9px] font-bold rounded">${inc.severity}</span>
+                            </div>
+                            <p class="text-[10px] text-gray-500 mt-1">Status: ${inc.status} | Created: ${inc.created_at.substring(0, 10)}</p>
+                        </div>
+                    `).join("");
+                } else {
+                    list.innerHTML = `<p class="text-xs text-gray-500">No active cases reported.</p>`;
+                }
+            } catch (e) {
+                console.error("Incidents fetch error:", e);
+            }
+        }
+
+        async function createIncident() {
+            const title = document.getElementById("inc-title").value.trim();
+            const severity = document.getElementById("inc-severity").value;
+            const description = document.getElementById("inc-desc").value.trim();
+            const alertIdsStr = document.getElementById("inc-alerts").value.trim();
+
+            if (!title) {
+                alert("Incident title is required.");
+                return;
+            }
+
+            const alert_ids = alertIdsStr.split(",").map(i => parseInt(i.trim())).filter(i => !isNaN(i));
+
+            try {
+                await fetch(`${API_BASE}/api/incidents`, {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({title, severity, description, alert_ids})
+                });
+                alert("Incident filed!");
+                loadIncidentsData();
+            } catch (e) {
+                console.error("Incident create error:", e);
+            }
+        }
+
+        async function selectIncident(id) {
+            window.state.selectedIncidentId = id;
+            document.getElementById("gen-report-btn").classList.remove("hidden");
+            
+            const detail = document.getElementById("report-details");
+            detail.innerHTML = "Retrieving incident case files...";
+
+            try {
+                const res = await fetch(`${API_BASE}/api/incidents/${id}`);
+                const data = await res.json();
+                if (!data) return;
+
+                const rep = data.report || null;
+                
+                if (!rep) {
+                    detail.innerHTML = `
+                        <div class="space-y-2">
+                            <h4 class="text-sm font-bold text-white">${data.title}</h4>
+                            <p class="text-gray-300"><b>Severity:</b> ${data.severity} | <b>Status:</b> ${data.status}</p>
+                            <p class="text-gray-400">${data.description || "No description provided."}</p>
+                            <div class="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded text-yellow-400">
+                                ⚠️ No AI Incident Report has been generated for this case yet. Click "Generate Report" above to trigger it.
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    detail.innerHTML = `
+                        <div class="space-y-4">
+                            <h4 class="text-sm font-bold text-white">${data.title}</h4>
+                            <div class="space-y-2">
+                                <p class="text-xs font-bold text-gray-500 uppercase border-b border-gray-800 pb-1">1. Executive Summary</p>
+                                <p class="text-gray-300">${rep.executive_summary}</p>
+                            </div>
+                            <div class="space-y-2">
+                                <p class="text-xs font-bold text-gray-500 uppercase border-b border-gray-800 pb-1">2. Attack Timeline</p>
+                                <div class="space-y-1">
+                                    ${(rep.timeline || []).map(t => `
+                                        <p class="text-gray-400">🕒 <b>${t.time.substring(11, 19)}</b> - ${t.event} <i>(${t.source})</i></p>
+                                    `).join("")}
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                <p class="text-xs font-bold text-gray-500 uppercase border-b border-gray-800 pb-1">3. Root Cause Analysis</p>
+                                <p class="text-gray-300">${rep.root_cause}</p>
+                            </div>
+                            <div class="space-y-2">
+                                <p class="text-xs font-bold text-gray-500 uppercase border-b border-gray-800 pb-1">4. Actionable Recommendations</p>
+                                <ul class="list-disc pl-4 text-gray-300 space-y-1">
+                                    ${(rep.recommendations || []).map(r => `<li>${r}</li>`).join("")}
+                                </ul>
+                            </div>
+                        </div>
+                    `;
+                }
+
+            } catch (e) {
+                detail.innerHTML = `Failed loading case report: ${e}`;
+            }
+        }
+
+        async function generateReport() {
+            const id = window.state.selectedIncidentId;
+            if (!id) return;
+
+            const detail = document.getElementById("report-details");
+            detail.innerHTML = "AI Engine generating report sections in background (takes approx 10s)...";
+
+            try {
+                await fetch(`${API_BASE}/api/incidents/${id}/generate-report`, {method: "POST"});
+                alert("AI Incident Report generated successfully!");
+                selectIncident(id);
+            } catch (e) {
+                console.error("Report generate error:", e);
+                detail.innerHTML = `Error generating report: ${e}`;
+            }
+        }
+
+        // ─── SCREEN 7: THREAT INTEL CONTROLLER ───
+        function getThreatIntelLayout() {
+            return `
+                <div class="mb-6">
+                    <h2 class="text-[24px] font-semibold text-white tracking-tight">👁️‍🗨️ Threat Intelligence Lookup</h2>
+                    <p class="text-[12px] text-[#b9cacb] mt-1">Lookup reputations of active IPs, domains, and file hashes strictly from database baselines</p>
+                </div>
+
+                <div class="card-border bg-[#1b1b1d] p-4 rounded max-w-xl mx-auto mb-6">
+                    <h3 class="text-xs font-bold text-white mb-4 uppercase">Threat Indicator Query Form</h3>
+                    <div class="space-y-3">
+                        <div class="grid grid-cols-3 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-bold text-[#b9cacb] mb-1">TYPE</label>
+                                <select id="ti-type" class="w-full bg-[#0d0d0f] border-gray-700 text-xs text-white rounded">
+                                    <option value="ip">IP Address</option>
+                                    <option value="domain">Domain Name</option>
+                                    <option value="hash">File Hash</option>
+                                </select>
+                            </div>
+                            <div class="col-span-2">
+                                <label class="block text-[10px] font-bold text-[#b9cacb] mb-1">VALUE</label>
+                                <input id="ti-val" class="w-full bg-[#0d0d0f] border-gray-700 text-xs text-white rounded" type="text" placeholder="e.g. 185.220.101.42"/>
+                            </div>
+                        </div>
+                        <button onclick="queryThreatIntel()" class="w-full py-2 bg-[#00f0ff] text-black font-bold text-xs uppercase tracking-wider rounded hover:opacity-90 transition-all">
+                            Submit Query
+                        </button>
+                    </div>
+                </div>
+
+                <div id="ti-result" class="max-w-xl mx-auto hidden">
+                    <!-- Result card -->
+                </div>
+            `;
+        }
+
+        async function queryThreatIntel() {
+            const type = document.getElementById("ti-type").value;
+            const indicator = document.getElementById("ti-val").value.trim();
+
+            if (!indicator) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/api/threat-intel/lookup`, {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({indicator, type})
+                });
+                const data = await res.json();
+                
+                const card = document.getElementById("ti-result");
+                card.classList.remove("hidden");
+
+                if (!data) return;
+
+                const repColors = {
+                    "Known Malicious": "border-red-500 text-red-400 bg-red-950/20",
+                    "Suspicious": "border-orange-500 text-orange-400 bg-orange-950/20",
+                    "Unknown": "border-gray-600 text-gray-400 bg-gray-900/20"
+                };
+                const colClass = repColors[data.reputation] || "border-gray-700 text-gray-300";
+
+                card.innerHTML = `
+                    <div class="card-border p-4 rounded ${colClass} mb-4">
+                        <h4 class="text-base font-bold uppercase tracking-wider mb-2">${data.reputation}</h4>
+                        <p class="text-xs"><b>Indicator:</b> <code>${data.indicator}</code> (${data.type.toUpperCase()})</p>
+                        ${data.malware_family ? `<p class="text-xs mt-1"><b>Malware Family:</b> ${data.malware_family}</p>` : ""}
+                        <p class="text-xs mt-1"><b>Source:</b> ${data.source}</p>
+                    </div>
+                    <div class="card-border bg-[#1b1b1d] p-4 rounded text-xs">
+                        <h5 class="font-bold text-white mb-2 uppercase">Recommended SOC Mitigation Actions</h5>
+                        <ul class="list-disc pl-4 text-gray-300 space-y-1">
+                            ${(data.recommended_actions || []).map(a => `<li>${a}</li>`).join("")}
+                        </ul>
+                    </div>
+                `;
+
+            } catch (e) {
+                console.error("Threat intel query error:", e);
+            }
+        }
+
+        // ─── SCREEN 8: ANALYST AI CHAT CONTROLLER ───
+        function getChatLayout() {
+            return `
+                <div class="mb-6">
+                    <h2 class="text-[24px] font-semibold text-white tracking-tight">💬 Analyst AI Chat Assistant</h2>
+                    <p class="text-[12px] text-[#b9cacb] mt-1">Ask questions, triage event codes, and decode obfuscated shells</p>
+                </div>
+
+                <div class="card-border bg-[#1b1b1d] rounded flex flex-col h-[500px]">
+                    <div class="flex-grow p-4 overflow-y-auto custom-scrollbar flex flex-col gap-3" id="chat-messages-container">
+                        <!-- Message bubble elements -->
+                    </div>
+                    
+                    <div class="p-4 border-t border-gray-800 bg-[#121214]">
+                        <div class="flex gap-2">
+                            <input id="chat-input" class="flex-1 bg-[#0d0d0f] border-gray-700 text-xs text-white rounded focus:ring-[#00f0ff]" type="text" placeholder="Type investigation message..."/>
+                            <button onclick="sendChatMessage()" class="px-4 py-2 bg-[#00f0ff] text-black font-bold text-xs uppercase rounded">Send</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function loadChatHistory() {
+            const container = document.getElementById("chat-messages-container");
+            container.innerHTML = "Loading conversation logs...";
+
+            try {
+                const res = await fetch(`${API_BASE}/api/chat/history/analyst_session`);
+                const data = await res.json();
+                
+                if (data && data.length > 0) {
+                    container.innerHTML = data.map(m => {
+                        const isUser = m.role === "user";
+                        const bg = isUser ? "bg-[#201f21] self-end text-white ml-12" : "bg-[#131315] border border-gray-800 self-start text-[#e5e1e4] mr-12";
+                        const side = isUser ? "items-end text-right" : "items-start text-left";
+                        return `
+                            <div class="flex flex-col ${side} space-y-1">
+                                <span class="text-[9px] font-bold text-gray-500 uppercase">${m.role.toUpperCase()}</span>
+                                <div class="p-3 rounded text-xs whitespace-pre-wrap ${bg}">${m.content}</div>
+                            </div>
+                        `;
+                    }).join("");
+                    
+                    // Scroll to bottom
+                    container.scrollTop = container.scrollHeight;
+                } else {
+                    container.innerHTML = `<p class="text-xs text-gray-500 text-center mt-20">Conversational log empty. Type a message below to start.</p>`;
+                }
+            } catch (e) {
+                console.error("Chat logs load error:", e);
+            }
+        }
+
+        async function sendChatMessage() {
+            const val = document.getElementById("chat-input").value.trim();
+            if (!val) return;
+
+            document.getElementById("chat-input").value = "";
+
+            try {
+                await fetch(`${API_BASE}/api/chat`, {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({
+                        message: val,
+                        session_id: "analyst_session",
+                        alert_id: window.state.selectedAlertId
+                    })
+                });
+                loadChatHistory();
+            } catch (e) {
+                console.error("Chat send error:", e);
+            }
+        }
+
+        // ─── SCREEN 9: SETTINGS CONTROLLER ───
+        function getSettingsLayout() {
+            return `
+                <div class="mb-6">
+                    <h2 class="text-[24px] font-semibold text-white tracking-tight">⚙️ Console Configuration Settings</h2>
+                    <p class="text-[12px] text-[#b9cacb] mt-1">Manage OpenRouter API keys, model thresholds, and refresh rates</p>
+                </div>
+
+                <div class="card-border bg-[#1b1b1d] p-6 rounded max-w-xl mx-auto space-y-4">
+                    <h3 class="text-xs font-bold text-white uppercase border-b border-gray-800 pb-2">AI Settings</h3>
+                    
+                    <div>
+                        <label class="block text-[10px] font-bold text-[#b9cacb] mb-1">OPENROUTER API KEY</label>
+                        <input id="set-key" class="w-full bg-[#0d0d0f] border-gray-700 text-xs text-white rounded" type="password" placeholder="sk-or-v1-..."/>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-[10px] font-bold text-[#b9cacb] mb-1">ANALYSIS MODEL</label>
+                        <select id="set-model" class="w-full bg-[#0d0d0f] border-gray-700 text-xs text-white rounded">
+                            <option value="anthropic/claude-sonnet-4">anthropic/claude-sonnet-4</option>
+                            <option value="openai/gpt-4o">openai/gpt-4o</option>
+                            <option value="google/gemini-2.5-flash">google/gemini-2.5-flash</option>
+                            <option value="deepseek/deepseek-chat">deepseek/deepseek-chat</option>
+                            <option value="liquid/lfm2.5-1.2b-thinking:free">liquid/lfm2.5-1.2b-thinking:free</option>
+                            <option value="liquid/lfm2.5-1.2b-instruct:free">liquid/lfm2.5-1.2b-instruct:free</option>
+                            <option value="nvidia/nemotron-3-nano-30b-a3b:free">nvidia/nemotron-3-nano-30b-a3b:free</option>
+                            <option value="nvidia/nemotron-nano-12b-2-vl:free">nvidia/nemotron-nano-12b-2-vl:free</option>
+                            <option value="qwen/qwen3-next-80b-a3b-instruct:free">qwen/qwen3-next-80b-a3b-instruct:free</option>
+                            <option value="nvidia/nemotron-nano-9b-v2:free">nvidia/nemotron-nano-9b-v2:free</option>
+                            <option value="openai/gpt-oss-120b:free">openai/gpt-oss-120b:free</option>
+                            <option value="openai/gpt-oss-20b:free">openai/gpt-oss-20b:free</option>
+                            <option value="qwen/qwen3-coder-480b-a35b:free">qwen/qwen3-coder-480b-a35b:free</option>
+                            <option value="venice/uncensored:free">venice/uncensored:free</option>
+                            <option value="meta-llama/llama-3.3-70b-instruct:free">meta-llama/llama-3.3-70b-instruct:free</option>
+                            <option value="meta-llama/llama-3.2-3b-instruct:free">meta-llama/llama-3.2-3b-instruct:free</option>
+                            <option value="nousresearch/hermes-3-405b:free">nousresearch/hermes-3-405b:free</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-bold text-[#b9cacb] mb-1">AUTO REFRESH RATE (SECONDS)</label>
+                        <select id="set-refresh" class="w-full bg-[#0d0d0f] border-gray-700 text-xs text-white rounded">
+                            <option value="off">Off</option>
+                            <option value="5">5s</option>
+                            <option value="10">10s</option>
+                            <option value="30">30s</option>
+                            <option value="60">60s</option>
+                        </select>
+                    </div>
+
+                    <button onclick="saveSettings()" class="w-full py-2 bg-[#00f0ff] text-black font-bold text-xs uppercase tracking-wider rounded hover:opacity-90 transition-all">
+                        Save Configurations
+                    </button>
+                </div>
+            `;
+        }
+
+        function loadSettingsView() {
+            document.getElementById("set-key").value = window.state.settings.openrouter_api_key || "";
+            document.getElementById("set-model").value = window.state.settings.ai_model || "anthropic/claude-sonnet-4";
+            document.getElementById("set-refresh").value = window.state.settings.auto_refresh_interval || "30";
+        }
+
+        async function saveSettings() {
+            const key = document.getElementById("set-key").value.trim();
+            const model = document.getElementById("set-model").value;
+            const refresh = document.getElementById("set-refresh").value;
+
+            try {
+                await fetch(`${API_BASE}/api/settings`, {
+                    method: "PUT",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({key: "openrouter_api_key", value: key})
+                });
+                await fetch(`${API_BASE}/api/settings`, {
+                    method: "PUT",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({key: "ai_model", value: model})
+                });
+                await fetch(`${API_BASE}/api/settings`, {
+                    method: "PUT",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({key: "auto_refresh_interval", value: refresh})
+                });
+
+                alert("Settings saved successfully!");
+                await loadSettings();
+                switchScreen("dashboard");
+            } catch (e) {
+                console.error("Save settings error:", e);
+            }
+        }
+
+        // ─── FLOWING MENU ENGINE ───
+        function initFlowingMenu() {
+            const items = document.querySelectorAll('.fm-item[data-screen]');
+
+            const distMetric = (x, y, x2, y2) => {
+                const dx = x - x2, dy = y - y2;
+                return dx * dx + dy * dy;
+            };
+
+            const findClosestEdge = (mx, my, w, h) => {
+                const top = distMetric(mx, my, w / 2, 0);
+                const bot = distMetric(mx, my, w / 2, h);
+                return top < bot ? 'top' : 'bottom';
+            };
+
+            items.forEach(item => {
+                const link    = item.querySelector('.fm-link');
+                const marquee = item.querySelector('.fm-marquee');
+                const inner   = item.querySelector('.fm-marquee__inner');
+                const part    = inner ? inner.querySelector('.fm-marquee__part') : null;
+                const anims   = { marquee: null };
+
+                // Start continuous marquee scroll once GSAP is ready
+                const startMarquee = () => {
+                    if (!inner || !part) return;
+                    const w = part.offsetWidth;
+                    if (w === 0) { requestAnimationFrame(startMarquee); return; }
+                    if (anims.marquee) anims.marquee.kill();
+                    anims.marquee = gsap.to(inner, {
+                        x: -w,
+                        duration: 14,
+                        ease: 'none',
+                        repeat: -1,
+                        modifiers: {
+                            x: gsap.utils.unitize(v => parseFloat(v) % w)
+                        }
+                    });
+                };
+
+                requestAnimationFrame(() => requestAnimationFrame(startMarquee));
+
+                const defaults = { duration: 0.55, ease: 'expo.out' };
+
+                link.addEventListener('mouseenter', e => {
+                    const rect = item.getBoundingClientRect();
+                    const edge = findClosestEdge(e.clientX - rect.left, e.clientY - rect.top, rect.width, rect.height);
+                    gsap.timeline({ defaults })
+                        .set(marquee, { y: edge === 'top' ? '-101%' : '101%' }, 0)
+                        .set(inner,   { y: edge === 'top' ? '101%'  : '-101%' }, 0)
+                        .to([marquee, inner], { y: '0%' }, 0);
+                });
+
+                link.addEventListener('mouseleave', e => {
+                    const rect = item.getBoundingClientRect();
+                    const edge = findClosestEdge(e.clientX - rect.left, e.clientY - rect.top, rect.width, rect.height);
+                    gsap.timeline({ defaults })
+                        .to(marquee, { y: edge === 'top' ? '-101%' : '101%' }, 0)
+                        .to(inner,   { y: edge === 'top' ? '101%'  : '-101%' }, 0);
+                });
+            });
+        }
+
+        // Global Spotlight Card mousemove tracker
+        window.addEventListener("mousemove", (e) => {
+            const card = e.target.closest(".card-border");
+            if (card) {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                card.style.setProperty("--mouse-x", `${x}px`);
+                card.style.setProperty("--mouse-y", `${y}px`);
+            }
+        });
+
+        // Run application on load
+        window.addEventListener("DOMContentLoaded", initApp);
+    </script>
+</body>
+</html>
