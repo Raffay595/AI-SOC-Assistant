@@ -483,7 +483,7 @@
     </main>
 
     <!-- Contextual FAB -->
-    <button onclick="switchScreen('chat')" class="fixed bottom-8 right-8 w-14 h-14 bg-[#00f0ff] text-black rounded-full shadow-[0_8px_24px_rgba(0,240,255,0.3)] flex items-center justify-center hover:scale-105 transition-transform active:scale-95 group z-50">
+    <button id="chat-fab" onclick="switchScreen('chat')" class="fixed bottom-8 right-8 w-14 h-14 bg-[#00f0ff] text-black rounded-full shadow-[0_8px_24px_rgba(0,240,255,0.3)] flex items-center justify-center hover:scale-105 transition-transform active:scale-95 group z-50">
         <span class="material-symbols-outlined text-3xl">psychology</span>
         <div class="absolute right-full mr-4 bg-[#201f21] text-[#e5e1e4] px-4 py-2 rounded text-[10px] font-bold uppercase tracking-wider whitespace-nowrap border border-[#2A2A2E] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
             Ask SOC Assistant AI
@@ -582,6 +582,16 @@
             document.querySelectorAll('.fm-item').forEach(el => el.classList.remove('fm-active'));
             const activeItem = document.getElementById(`nav-${screenName}`);
             if (activeItem) activeItem.classList.add('fm-active');
+
+            // Hide chat FAB when already on chat screen
+            const chatFab = document.getElementById("chat-fab");
+            if (chatFab) {
+                if (screenName === "chat") {
+                    chatFab.classList.add("hidden");
+                } else {
+                    chatFab.classList.remove("hidden");
+                }
+            }
 
             // Update Grounded Context Fab Indicator
             const indicator = document.getElementById("context-indicator");
@@ -1724,9 +1734,22 @@
         // ─── SCREEN 8: ANALYST AI CHAT CONTROLLER ───
         function getChatLayout() {
             return `
-                <div class="mb-6">
-                    <h2 class="text-[24px] font-semibold text-white tracking-tight">💬 Analyst AI Chat Assistant</h2>
-                    <p class="text-[12px] text-[#b9cacb] mt-1">Ask questions, triage event codes, and decode obfuscated shells</p>
+                <div class="mb-6 flex justify-between items-start">
+                    <div>
+                        <h2 class="text-[24px] font-semibold text-white tracking-tight">💬 Analyst AI Chat Assistant</h2>
+                        <p class="text-[12px] text-[#b9cacb] mt-1">Ask questions, triage event codes, and decode obfuscated shells</p>
+                    </div>
+                    <button id="delete-chat-btn" onclick="clearChatHistory()" class="flex items-center gap-1.5 px-3 py-1.5 bg-red-950/40 border border-red-500/40 text-red-400 text-[10px] font-bold uppercase tracking-wider rounded hover:bg-red-900/50 hover:border-red-400 transition-all">
+                        <span class="material-symbols-outlined text-sm">delete</span> Delete Chat
+                    </button>
+                </div>
+
+                <div id="delete-confirm-banner" class="hidden mb-4 p-3 rounded border border-red-500/40 bg-red-950/30 flex items-center justify-between">
+                    <span class="text-red-400 text-xs font-bold">⚠️ This will permanently delete the entire conversation. Are you sure?</span>
+                    <div class="flex gap-2">
+                        <button onclick="confirmClearChat()" class="px-3 py-1 bg-red-600 text-white text-[10px] font-bold uppercase rounded hover:bg-red-500 transition-all">Yes, Delete</button>
+                        <button onclick="cancelClearChat()" class="px-3 py-1 bg-[#353437] text-gray-300 text-[10px] font-bold uppercase rounded hover:bg-[#47464b] transition-all">Cancel</button>
+                    </div>
                 </div>
 
                 <div class="card-border bg-[#1b1b1d] rounded flex flex-col h-[500px]">
@@ -1746,7 +1769,9 @@
 
         async function loadChatHistory() {
             const container = document.getElementById("chat-messages-container");
-            container.innerHTML = "Loading conversation logs...";
+            if (!container.innerHTML.trim() || container.innerHTML.includes("Conversational log empty") || container.innerHTML.includes("Loading conversation logs")) {
+                container.innerHTML = "Loading conversation logs...";
+            }
 
             try {
                 const res = await fetch(`${API_BASE}/api/chat/history/analyst_session`);
@@ -1781,6 +1806,36 @@
 
             document.getElementById("chat-input").value = "";
 
+            const container = document.getElementById("chat-messages-container");
+            
+            // Clear empty log message if present
+            if (container.innerHTML.includes("Conversational log empty")) {
+                container.innerHTML = "";
+            }
+
+            // Append user message immediately
+            const userBg = "bg-[#201f21] self-end text-white ml-12";
+            const userSide = "items-end text-right";
+            const userHtml = `
+                <div class="flex flex-col ${userSide} space-y-1">
+                    <span class="text-[9px] font-bold text-gray-500 uppercase">USER</span>
+                    <div class="p-3 rounded text-xs whitespace-pre-wrap ${userBg}">${val}</div>
+                </div>
+            `;
+            container.insertAdjacentHTML("beforeend", userHtml);
+            
+            // Append thinking indicator
+            const typingHtml = `
+                <div id="chat-typing-indicator" class="flex flex-col items-start space-y-1">
+                    <span class="text-[9px] font-bold text-[#00f0ff] uppercase">AI ANALYST</span>
+                    <div class="p-3 rounded text-xs bg-[#131315] border border-gray-800 text-gray-400 mr-12 animate-pulse">
+                        Thinking...
+                    </div>
+                </div>
+            `;
+            container.insertAdjacentHTML("beforeend", typingHtml);
+            container.scrollTop = container.scrollHeight;
+
             try {
                 await fetch(`${API_BASE}/api/chat`, {
                     method: "POST",
@@ -1791,10 +1846,44 @@
                         alert_id: window.state.selectedAlertId
                     })
                 });
+                
+                const indicator = document.getElementById("chat-typing-indicator");
+                if (indicator) indicator.remove();
+                
                 loadChatHistory();
             } catch (e) {
                 console.error("Chat send error:", e);
+                const indicator = document.getElementById("chat-typing-indicator");
+                if (indicator) {
+                    indicator.innerHTML = `
+                        <span class="text-[9px] font-bold text-red-500 uppercase">SYSTEM ERROR</span>
+                        <div class="p-3 rounded text-xs bg-[#2a1a1c] border border-red-900 text-red-400 mr-12">
+                            Failed to deliver message: ${e.message || e}
+                        </div>
+                    `;
+                }
             }
+        }
+
+        function clearChatHistory() {
+            const banner = document.getElementById("delete-confirm-banner");
+            if (banner) banner.classList.remove("hidden");
+        }
+
+        function cancelClearChat() {
+            const banner = document.getElementById("delete-confirm-banner");
+            if (banner) banner.classList.add("hidden");
+        }
+
+        async function confirmClearChat() {
+            try {
+                await fetch(`${API_BASE}/api/chat/history/analyst_session`, { method: "DELETE" });
+            } catch (e) {
+                console.error("Clear chat error:", e);
+            }
+            const banner = document.getElementById("delete-confirm-banner");
+            if (banner) banner.classList.add("hidden");
+            loadChatHistory();
         }
 
         // ─── SCREEN 9: SETTINGS CONTROLLER ───
