@@ -21,8 +21,9 @@ from backend.routers import (
 )
 import os
 
-# Ensure DB directories exist
-os.makedirs(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "database"), exist_ok=True)
+# Ensure DB directories exist (skip if on Vercel to avoid read-only FS error)
+if not os.getenv("VERCEL"):
+    os.makedirs(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "database"), exist_ok=True)
 
 app = FastAPI(
     title="SOC AI Assistant API",
