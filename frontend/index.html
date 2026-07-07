@@ -1943,10 +1943,28 @@
             `;
         }
 
-        function loadSettingsView() {
-            document.getElementById("set-key").value = window.state.settings.openrouter_api_key || "";
-            document.getElementById("set-model").value = window.state.settings.ai_model || "anthropic/claude-sonnet-4";
-            document.getElementById("set-refresh").value = window.state.settings.auto_refresh_interval || "30";
+        async function loadSettingsView() {
+            // Always fetch fresh settings from the API — never read stale in-memory state
+            try {
+                const res = await fetch(`${API_BASE}/api/settings`);
+                if (!res.ok) throw new Error(`Server returned ${res.status}`);
+                const data = await res.json();
+                const map = {};
+                data.forEach(s => { map[s.key] = s.value; });
+
+                document.getElementById("set-key").value = map["openrouter_api_key"] || "";
+                const modelEl = document.getElementById("set-model");
+                if (map["ai_model"]) modelEl.value = map["ai_model"];
+                const refreshEl = document.getElementById("set-refresh");
+                if (map["auto_refresh_interval"]) refreshEl.value = map["auto_refresh_interval"];
+
+                // Update in-memory state too
+                window.state.settings.openrouter_api_key = map["openrouter_api_key"] || "";
+                window.state.settings.ai_model = map["ai_model"] || window.state.settings.ai_model;
+                window.state.settings.auto_refresh_interval = map["auto_refresh_interval"] || window.state.settings.auto_refresh_interval;
+            } catch (e) {
+                console.error("Failed to load settings from API:", e);
+            }
         }
 
         async function saveSettings() {
@@ -1954,28 +1972,47 @@
             const model = document.getElementById("set-model").value;
             const refresh = document.getElementById("set-refresh").value;
 
+            const saveBtn = document.querySelector("[onclick='saveSettings()']");
+            if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = "Saving..."; }
+
             try {
-                await fetch(`${API_BASE}/api/settings`, {
-                    method: "PUT",
+                const res = await fetch(`${API_BASE}/api/settings/batch`, {
+                    method: "POST",
                     headers: {"Content-Type": "application/json"},
-                    body: JSON.stringify({key: "openrouter_api_key", value: key})
-                });
-                await fetch(`${API_BASE}/api/settings`, {
-                    method: "PUT",
-                    headers: {"Content-Type": "application/json"},
-                    body: JSON.stringify({key: "ai_model", value: model})
-                });
-                await fetch(`${API_BASE}/api/settings`, {
-                    method: "PUT",
-                    headers: {"Content-Type": "application/json"},
-                    body: JSON.stringify({key: "auto_refresh_interval", value: refresh})
+                    body: JSON.stringify([
+                        {key: "openrouter_api_key", value: key},
+                        {key: "ai_model", value: model},
+                        {key: "auto_refresh_interval", value: refresh}
+                    ])
                 });
 
-                alert("Settings saved successfully!");
-                await loadSettings();
-                switchScreen("dashboard");
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({detail: `HTTP ${res.status}`}));
+                    throw new Error(err.detail || `Server error ${res.status}`);
+                }
+
+                // Update in-memory state
+                window.state.settings.openrouter_api_key = key;
+                window.state.settings.ai_model = model;
+                window.state.settings.auto_refresh_interval = refresh;
+
+                // Show inline success message instead of browser alert
+                const canvas = document.getElementById("content-canvas");
+                const banner = document.createElement("div");
+                banner.className = "fixed top-4 right-4 z-50 px-4 py-3 bg-green-900/90 border border-green-500 text-green-300 text-xs font-bold rounded shadow-lg";
+                banner.textContent = "✓ Settings saved successfully.";
+                document.body.appendChild(banner);
+                setTimeout(() => banner.remove(), 3000);
+
             } catch (e) {
                 console.error("Save settings error:", e);
+                const banner = document.createElement("div");
+                banner.className = "fixed top-4 right-4 z-50 px-4 py-3 bg-red-900/90 border border-red-500 text-red-300 text-xs font-bold rounded shadow-lg max-w-sm";
+                banner.textContent = `✗ Save failed: ${e.message}`;
+                document.body.appendChild(banner);
+                setTimeout(() => banner.remove(), 5000);
+            } finally {
+                if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = "Save Configurations"; }
             }
         }
 

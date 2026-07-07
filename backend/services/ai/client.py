@@ -3,6 +3,11 @@ SOC AI Assistant — OpenRouter AI Client
 
 Direct OpenAI SDK integration with OpenRouter.
 No LangChain — just clean, simple API calls.
+
+Priority chain for API key:
+  1. Database setting (saved by user in Settings UI)
+  2. OPENROUTER_API_KEY environment variable (Vercel env vars)
+  3. Config file fallback
 """
 
 from openai import AsyncOpenAI
@@ -11,10 +16,11 @@ from backend.models import AppSetting
 from backend.database import SessionLocal
 from typing import Optional
 import json
+import os
 
 
 def get_ai_settings() -> dict:
-    """Get AI settings from database, fallback to config."""
+    """Get AI settings from database, fallback to empty dict on any error."""
     db = SessionLocal()
     try:
         result = {}
@@ -28,27 +34,47 @@ def get_ai_settings() -> dict:
 
 
 def get_client() -> Optional[AsyncOpenAI]:
-    """Get an AsyncOpenAI client configured for OpenRouter."""
+    """
+    Get an AsyncOpenAI client configured for OpenRouter.
+    Returns None if no valid API key is available (triggers mock fallback).
+    Priority: DB setting → OPENROUTER_API_KEY env var → config file.
+    """
     db_settings = get_ai_settings()
-    api_key = db_settings.get("openrouter_api_key", "") or settings.OPENROUTER_API_KEY
 
-    if not api_key or api_key == "sk-or-v1-your-key-here":
+    # Priority 1: DB-persisted key (set by user in Settings UI)
+    api_key = db_settings.get("openrouter_api_key", "").strip()
+
+    # Priority 2: Environment variable (Vercel env vars, .env file)
+    if not api_key:
+        api_key = os.getenv("OPENROUTER_API_KEY", "").strip()
+
+    # Priority 3: Pydantic settings (config.py / .env)
+    if not api_key:
+        api_key = settings.OPENROUTER_API_KEY.strip()
+
+    # Reject placeholder values
+    if not api_key or api_key in ("sk-or-v1-your-key-here", "your-key-here", ""):
         return None
 
     return AsyncOpenAI(
         base_url="https://openrouter.ai/api/v1",
         api_key=api_key,
         default_headers={
-            "HTTP-Referer": "http://localhost:8501",
+            "HTTP-Referer": "https://soc-ai-assistant.vercel.app",
             "X-Title": "SOC AI Assistant",
         },
     )
 
 
 def get_model() -> str:
-    """Get the configured AI model."""
+    """Get the configured AI model. DB setting overrides env var."""
     db_settings = get_ai_settings()
-    return db_settings.get("ai_model", settings.AI_MODEL)
+    model = db_settings.get("ai_model", "").strip()
+    if not model:
+        model = os.getenv("AI_MODEL", "").strip()
+    if not model:
+        model = settings.AI_MODEL
+    return model
 
 
 def get_temperature() -> float:
@@ -72,9 +98,9 @@ def get_max_tokens() -> int:
 async def call_ai(system_prompt: str, user_prompt: str) -> Optional[dict]:
     """
     Call OpenRouter API and return parsed JSON response.
-    
-    Returns None if no API key is configured (will trigger mock fallback).
-    Raises Exception on API errors.
+
+    Returns None if no API key is configured (triggers mock fallback).
+    Raises Exception on API errors so callers can handle them.
     """
     client = get_client()
     if client is None:

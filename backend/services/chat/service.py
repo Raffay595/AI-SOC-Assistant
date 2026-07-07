@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from backend.models import ChatMessage, Alert
 from backend.services.ai.client import call_ai
 from backend.services.ai.prompts import CHAT_SYSTEM
+from typing import Optional
 import json
 
 

@@ -5,8 +5,5 @@ pydantic
 pydantic-settings
 openai
 httpx
-plotly
-pandas
 python-dotenv
 python-multipart
-aiofiles

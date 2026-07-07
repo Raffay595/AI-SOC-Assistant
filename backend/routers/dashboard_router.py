@@ -4,7 +4,7 @@ SOC AI Assistant — Dashboard Router
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, text
 from backend.database import get_db
 from backend.models import Alert, Incident, Analysis
 from backend.schemas import DashboardMetrics
@@ -140,7 +140,7 @@ def get_dashboard_metrics(db: Session = Depends(get_db)):
 def health_check(db: Session = Depends(get_db)):
     """Health check endpoint checking DB responsiveness."""
     try:
-        db.execute(func.select(1))
+        db.execute(text("SELECT 1"))
         db_status = "healthy"
     except Exception:
         db_status = "unhealthy"

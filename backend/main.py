@@ -4,6 +4,7 @@ SOC AI Assistant — FastAPI Main Application Entrypoint
 Wires up database initialization, startup event listeners, routers, and CORS.
 """
 
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.database import engine, Base
@@ -21,30 +22,41 @@ from backend.routers import (
 )
 import os
 
-# Ensure DB directories exist (skip if on Vercel to avoid read-only FS error)
+
+# Ensure DB directories exist (skip if on Vercel — uses /tmp via database.py)
 if not os.getenv("VERCEL"):
-    os.makedirs(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "database"), exist_ok=True)
+    os.makedirs(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "database"),
+        exist_ok=True
+    )
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """FastAPI lifespan handler: initializes DB on startup."""
+    try:
+        initialize()
+    except Exception as e:
+        print(f"[WARN] Database initialization error (non-fatal): {e}")
+    yield
+    # Shutdown cleanup (none needed)
+
 
 app = FastAPI(
     title="SOC AI Assistant API",
     description="Backend API for the AI-Powered Security Operations Center Platform",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
-# CORS Config (explicitly allows Streamlit frontend port)
+# CORS — allow all origins so the frontend SPA (served from /frontend) can call /api
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Streamlit runs client-side inside the analyst's browser
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Startup DB Event
-@app.on_event("startup")
-def on_startup():
-    """Initializes tables and seeds alerts + settings database on start."""
-    initialize()
 
 # Register Routers
 app.include_router(dashboard_router.router)
