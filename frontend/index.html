@@ -257,12 +257,258 @@
             animation: gradientShift 3s ease infinite alternate;
             display: inline-block;
         }
+
+        /* ====== MOBILE & TABLET RESPONSIVE OVERRIDES (< 1024px) ====== */
+
+        /* Sidebar overlay backdrop */
+        #sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 45;
+            backdrop-filter: blur(2px);
+        }
+        #sidebar-overlay.active { display: block; }
+
+        /* Hamburger button – hidden on desktop */
+        #hamburger-btn {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            flex-shrink: 0;
+            color: #e5e1e4;
+            border-radius: 4px;
+        }
+        #hamburger-btn:active { background: rgba(255,255,255,0.05); }
+        #hamburger-btn .material-symbols-outlined { font-size: 22px; }
+
+        @media (max-width: 1023px) {
+            /* Show hamburger */
+            #hamburger-btn { display: flex; }
+
+            /* Sidebar becomes off-canvas drawer */
+            aside#sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+                z-index: 50;
+                box-shadow: none;
+                height: 100vh !important;
+                height: 100dvh !important;
+                display: flex;
+                flex-direction: column;
+            }
+            aside#sidebar.sidebar-open {
+                transform: translateX(0);
+                box-shadow: 4px 0 32px rgba(0,0,0,0.6);
+            }
+            aside#sidebar nav {
+                flex: 1 1 auto;
+                overflow-y: auto !important;
+                -webkit-overflow-scrolling: touch;
+            }
+            aside#sidebar #flowing-menu.fm-wrap {
+                height: auto !important;
+                min-height: 100%;
+                overflow: visible !important;
+            }
+            aside#sidebar .fm-bottom {
+                margin-top: auto;
+                padding-bottom: 40px !important; /* Spacing so last item is fully reachable & clickable */
+            }
+
+            /* Header spans full width */
+            header#topbar {
+                left: 0 !important;
+                width: 100% !important;
+            }
+
+            /* Main content no sidebar offset – preserve padding-top for fixed header */
+            main#content-canvas {
+                margin-left: 0 !important;
+                padding-left: 16px !important;
+                padding-right: 16px !important;
+                padding-bottom: 16px !important;
+                /* padding-top preserved from pt-16 (64px) to clear fixed header */
+            }
+
+            /* FAB repositioning */
+            #chat-fab {
+                bottom: 20px;
+                right: 20px;
+                width: 50px;
+                height: 50px;
+            }
+
+            /* ====== MOBILE CARD LAYOUT: Convert alert tables to stacked cards ====== */
+            .mobile-card-table thead { display: none; }
+            .mobile-card-table,
+            .mobile-card-table tbody,
+            .mobile-card-table tr,
+            .mobile-card-table td {
+                display: block;
+                width: 100%;
+            }
+            .mobile-card-table tr {
+                padding: 12px 16px;
+                margin-bottom: 8px;
+                background: #201f21;
+                border: 1px solid #2A2A2E;
+                border-radius: 8px;
+                border-left: 4px solid #3b494b;
+            }
+            .mobile-card-table tr:hover {
+                border-color: #00f0ff;
+            }
+            .mobile-card-table td {
+                padding: 4px 0;
+                text-align: left !important;
+                border: none;
+                display: flex;
+                justify-content: space-between;
+                align-items: baseline;
+                gap: 8px;
+                word-break: normal;
+                overflow-wrap: anywhere;
+            }
+            .mobile-card-table td::before {
+                content: attr(data-label);
+                font-size: 9px;
+                font-weight: 700;
+                color: #849495;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                flex-shrink: 0;
+                min-width: 80px;
+            }
+            .mobile-card-table td:last-child {
+                padding-top: 8px;
+                margin-top: 4px;
+                border-top: 1px solid #2A2A2E;
+            }
+            .mobile-card-table td:last-child::before {
+                display: none;
+            }
+            .mobile-card-table td:last-child button,
+            .mobile-card-table td:last-child a {
+                width: 100%;
+                text-align: center;
+                padding: 10px 16px;
+                min-height: 44px;
+            }
+            /* Severity-colored left borders on mobile cards */
+            .mobile-card-table tr.sev-critical { border-left-color: #FF4B4B; }
+            .mobile-card-table tr.sev-high { border-left-color: #FFA500; }
+            .mobile-card-table tr.sev-medium { border-left-color: #EAB308; }
+            .mobile-card-table tr.sev-low { border-left-color: #22D3EE; }
+        }
+
+        @media (max-width: 767px) {
+            /* Tighter horizontal padding on small phones – preserve top padding */
+            main#content-canvas {
+                padding-left: 12px !important;
+                padding-right: 12px !important;
+                padding-bottom: 12px !important;
+            }
+
+            /* Page headings scale down */
+            .page-title { font-size: 18px !important; }
+
+            /* Stack dashboard header */
+            .dash-header {
+                flex-direction: column;
+                align-items: flex-start !important;
+                gap: 8px;
+            }
+
+            /* Chat layout height on mobile */
+            .chat-box { height: 60vh !important; }
+
+            /* Delete chat button wraps below heading */
+            .chat-header {
+                flex-direction: column;
+                align-items: flex-start !important;
+                gap: 8px;
+            }
+
+            /* Alert detail ops row stacks */
+            .ops-row {
+                flex-direction: column !important;
+                gap: 12px !important;
+            }
+            .ops-row > div { width: 100%; }
+            .ops-row input, .ops-row select { width: 100% !important; }
+
+            /* Threat intel form: stack on mobile */
+            .ti-form-grid {
+                grid-template-columns: 1fr !important;
+            }
+            .ti-form-col2 { grid-column: span 1 !important; }
+
+            /* AI analysis top row stack */
+            .ai-top-grid {
+                grid-template-columns: 1fr !important;
+            }
+            .ai-top-summary { grid-column: span 1 !important; }
+            .ai-top-gauge { grid-column: span 1 !important; }
+
+            /* Incidents layout full width */
+            .incidents-grid {
+                grid-template-columns: 1fr !important;
+            }
+            .incidents-panel { grid-column: span 1 !important; }
+
+            /* Attack chain detail: stack host/ip info */
+            .chain-detail-row {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 4px;
+            }
+        }
+
+        /* Touch-friendly minimum tap target for all buttons */
+        @media (max-width: 1023px) {
+            button, a[role="button"], .fm-link {
+                min-height: 44px;
+            }
+            /* Exception: badge-style inline spans */
+            .fm-link { min-height: 48px; }
+
+            /* Tables scroll horizontally */
+            .table-scroll-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+            /* Code/log blocks scroll horizontally */
+            pre { overflow-x: auto; white-space: pre; max-width: 100%; }
+
+            /* Long text wraps */
+            td, th { word-break: break-word; }
+
+            /* Modals/dialogs: max height + scroll */
+            .modal-content {
+                max-height: 90vh;
+                overflow-y: auto;
+            }
+
+            /* MITRE matrix scrolls horizontally */
+            #mitre-matrix-container { overflow-x: auto; }
+
+            /* Settings card: full width on mobile */
+            .settings-card { max-width: 100% !important; }
+        }
     </style>
 </head>
 <body class="text-[14px] leading-5">
     
+    <!-- Sidebar overlay (mobile) -->
+    <div id="sidebar-overlay" onclick="closeSidebar()"></div>
+
     <!-- Unified Sidebar -->
-    <aside class="fixed left-0 top-0 h-full w-[240px] z-50 bg-[#121721] border-r border-[#2A2A2E] flex flex-col py-4 gap-2">
+    <aside id="sidebar" class="fixed left-0 top-0 h-full w-[240px] z-50 bg-[#121721] border-r border-[#2A2A2E] flex flex-col py-4 gap-2">
         <div class="px-4 mb-6">
             <h1 class="text-xl font-bold tracking-tight"><span class="gradient-text">SOC ASSISTANT</span></h1>
             <div class="flex items-center gap-2 mt-1">
@@ -453,8 +699,12 @@
     </aside>
     
     <!-- Unified Top App Bar -->
-    <header class="fixed top-0 right-0 w-[calc(100%-240px)] z-40 h-12 bg-[#131315] border-b border-[#2A2A2E] flex justify-between items-center px-6">
-        <div class="flex items-center gap-4 flex-1">
+    <header id="topbar" class="fixed top-0 left-0 lg:left-[240px] w-full lg:w-[calc(100%-240px)] z-40 h-12 bg-[#131315] border-b border-[#2A2A2E] flex justify-between items-center px-3 lg:px-6">
+        <!-- Hamburger: visible only on mobile/tablet -->
+        <button id="hamburger-btn" onclick="toggleSidebar()" aria-label="Open navigation">
+            <span class="material-symbols-outlined">menu</span>
+        </button>
+        <div class="flex items-center gap-2 lg:gap-4 flex-1">
             <div class="relative w-full max-w-md focus-within:ring-1 focus-within:ring-[#00F0FF] rounded">
                 <span class="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-[18px]">search</span>
                 <input id="global-search" class="w-full bg-[#0d0d0f] border-none text-[12px] px-9 py-1 text-white focus:ring-0 rounded" placeholder="Search logs, alerts, or entities..." type="text"/>
@@ -466,7 +716,7 @@
                 <span>CONTEXT LOADED</span>
             </div>
             <div class="flex items-center gap-2 pl-4 border-l border-[#2A2A2E]">
-                <div class="text-right">
+                <div class="text-right hidden sm:block">
                     <p class="text-[10px] font-bold text-[#e5e1e4]">ANALYST_09</p>
                     <p class="text-[9px] text-[#00dbe9] font-bold tracking-widest">TIER 3</p>
                 </div>
@@ -478,7 +728,7 @@
     </header>
     
     <!-- Content container -->
-    <main id="content-canvas" class="ml-[240px] pt-16 p-6 min-h-screen bg-[#0D0D0F]">
+    <main id="content-canvas" class="lg:ml-[240px] pt-16 px-4 pb-4 lg:px-6 lg:pb-6 min-h-screen bg-[#0D0D0F] overflow-x-hidden">
         <!-- Page layout loads dynamically here -->
     </main>
 
@@ -493,6 +743,28 @@
     <!-- JS ENGINE AND API IMPLEMENTATION -->
     <script>
         const API_BASE = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" ? "http://localhost:8000" : window.location.origin;
+        
+        // ─── MOBILE SIDEBAR DRAWER ───
+        function openSidebar() {
+            document.getElementById('sidebar').classList.add('sidebar-open');
+            document.getElementById('sidebar-overlay').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeSidebar() {
+            document.getElementById('sidebar').classList.remove('sidebar-open');
+            document.getElementById('sidebar-overlay').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar.classList.contains('sidebar-open')) {
+                closeSidebar();
+            } else {
+                openSidebar();
+            }
+        }
+        // Close on Escape key
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSidebar(); });
         
         // Dynamic Global State
         window.state = {
@@ -578,6 +850,9 @@
         function switchScreen(screenName) {
             window.state.activeScreen = screenName;
 
+            // Close sidebar drawer on mobile/tablet when navigating
+            if (window.innerWidth < 1024) { closeSidebar(); }
+
             // Update FlowingMenu active state
             document.querySelectorAll('.fm-item').forEach(el => el.classList.remove('fm-active'));
             const activeItem = document.getElementById(`nav-${screenName}`);
@@ -637,9 +912,9 @@
         // ─── SCREEN 1: DASHBOARD CONTROLLER ───
         function getDashboardLayout() {
             return `
-                <div class="mb-6 flex justify-between items-end">
+                <div class="mb-6 flex flex-wrap justify-between items-end gap-2 dash-header">
                     <div>
-                        <h2 class="text-[24px] font-semibold text-white tracking-tight">Security Operations Dashboard</h2>
+                        <h2 class="text-[24px] font-semibold text-white tracking-tight page-title">Security Operations Dashboard</h2>
                         <p class="text-[12px] text-[#b9cacb] mt-1">Real-time threat landscape and infrastructure monitoring</p>
                     </div>
                     <div class="flex gap-2">
@@ -807,7 +1082,7 @@
                 if (data.attack_chains && data.attack_chains.length > 0) {
                     chainsList.innerHTML = data.attack_chains.map(c => `
                         <div class="bg-[#201f21] p-4 border border-red-500/20 hover:border-red-500/50 transition-all rounded">
-                            <div class="flex justify-between items-start mb-2">
+                            <div class="flex justify-between items-start mb-2 flex-wrap gap-2 chain-detail-row">
                                 <div>
                                     <h5 class="text-white font-bold text-sm flex items-center gap-2">
                                         ⚠️ ${c.name} (${c.chain_id}) 
@@ -940,7 +1215,7 @@
                 <!-- Table Container -->
                 <div class="card-border bg-[#1b1b1d] rounded overflow-hidden">
                     <div class="overflow-x-auto">
-                        <table class="w-full text-left">
+                        <table class="w-full text-left mobile-card-table">
                             <thead>
                                 <tr class="bg-[#121214] text-[#b9cacb] text-[10px] font-bold uppercase tracking-wider border-b border-[#2A2A2E]">
                                     <th class="px-4 py-3">ID</th>
@@ -995,17 +1270,18 @@
                             Low: "border-l-4 border-l-cyan-500 text-cyan-400"
                         };
                         const colorClass = sevColors[a.severity] || "text-gray-400";
+                        const sevClass = a.severity ? `sev-${a.severity.toLowerCase()}` : '';
                         return `
-                            <tr class="border-b border-gray-800 hover:bg-[#201f21]/50 transition-colors">
-                                <td class="px-4 py-3 font-data-mono font-bold text-gray-400">${a.id}</td>
-                                <td class="px-4 py-3 text-gray-400 whitespace-nowrap">${a.timestamp.substring(0, 19).replace('T', ' ')}</td>
-                                <td class="px-4 py-3 font-bold ${colorClass}">${a.severity}</td>
-                                <td class="px-4 py-3 font-data-mono text-gray-300 font-bold">${a.host}</td>
-                                <td class="px-4 py-3 font-data-mono text-[#00dbe9]">${a.mitre_technique_id || "N/A"}</td>
-                                <td class="px-4 py-3 text-gray-300">${a.description}</td>
-                                <td class="px-4 py-3 font-bold">${a.status}</td>
-                                <td class="px-4 py-3 text-right whitespace-nowrap">
-                                    <button onclick="pivotToAlert(${a.id})" class="px-2 py-1 bg-[#201f21] border border-gray-700 text-[#00f0ff] font-bold text-[10px] uppercase rounded hover:bg-gray-700 transition-all">Inspect</button>
+                            <tr class="border-b border-gray-800 hover:bg-[#201f21]/50 transition-colors ${sevClass}">
+                                <td data-label="ID" class="px-4 py-3 font-data-mono font-bold text-gray-400">${a.id}</td>
+                                <td data-label="Timestamp" class="px-4 py-3 text-gray-400">${a.timestamp.substring(0, 19).replace('T', ' ')}</td>
+                                <td data-label="Severity" class="px-4 py-3 font-bold ${colorClass}">${a.severity}</td>
+                                <td data-label="Host" class="px-4 py-3 font-data-mono text-gray-300 font-bold">${a.host}</td>
+                                <td data-label="MITRE ID" class="px-4 py-3 font-data-mono text-[#00dbe9]">${a.mitre_technique_id || "N/A"}</td>
+                                <td data-label="Description" class="px-4 py-3 text-gray-300">${a.description}</td>
+                                <td data-label="Status" class="px-4 py-3 font-bold">${a.status}</td>
+                                <td class="px-4 py-3 text-right">
+                                    <button onclick="pivotToAlert(${a.id})" class="px-4 py-2 bg-[#201f21] border border-gray-700 text-[#00f0ff] font-bold text-[11px] uppercase rounded hover:bg-gray-700 transition-all">Inspect</button>
                                 </td>
                             </tr>
                         `;
@@ -1068,17 +1344,17 @@
                     </div>
 
                     <!-- Operations Box -->
-                    <div class="card-border bg-[#1b1b1d] p-4 rounded mb-6 flex justify-between gap-4 flex-wrap">
+                    <div class="card-border bg-[#1b1b1d] p-4 rounded mb-6 flex justify-between gap-4 flex-wrap ops-row">
                         <div>
                             <label class="block text-[10px] font-bold text-[#b9cacb] mb-1">ASSIGNED TO</label>
-                            <div class="flex gap-2">
-                                <input id="assign-analyst-input" class="bg-[#0d0d0f] border-gray-700 text-xs text-white rounded focus:ring-[#00f0ff]" type="text" placeholder="Analyst Name"/>
+                            <div class="flex gap-2 flex-wrap">
+                                <input id="assign-analyst-input" class="flex-1 min-w-0 bg-[#0d0d0f] border-gray-700 text-xs text-white rounded focus:ring-[#00f0ff]" type="text" placeholder="Analyst Name"/>
                                 <button onclick="assignAlert()" class="px-3 py-1 bg-gray-700 text-white rounded text-xs font-bold hover:bg-gray-600">Update</button>
                             </div>
                         </div>
                         <div>
                             <label class="block text-[10px] font-bold text-[#b9cacb] mb-1">STATUS</label>
-                            <select id="status-select" onchange="updateAlertStatus()" class="bg-[#0d0d0f] border-gray-700 text-xs text-white rounded focus:ring-[#00f0ff]">
+                            <select id="status-select" onchange="updateAlertStatus()" class="w-full bg-[#0d0d0f] border-gray-700 text-xs text-white rounded focus:ring-[#00f0ff]">
                                 <option value="New">New</option>
                                 <option value="Investigating">Investigating</option>
                                 <option value="Resolved">Resolved</option>
@@ -1186,15 +1462,15 @@
                 <div id="ai-loader" class="text-gray-400 text-center py-10">Select an alert to view its AI triage report.</div>
                 
                 <div id="ai-content" class="hidden">
-                    <div class="grid grid-cols-12 gap-6 mb-6">
+                    <div class="grid grid-cols-12 gap-6 mb-6 ai-top-grid">
                         <!-- Summary -->
-                        <div class="col-span-12 lg:col-span-9 card-border bg-[#1b1b1d] p-4 rounded">
+                        <div class="col-span-12 lg:col-span-9 card-border bg-[#1b1b1d] p-4 rounded ai-top-summary">
                             <h3 class="text-lg font-bold text-white mb-2">Executive Threat Assessment Summary</h3>
                             <p id="ai-summary" class="text-gray-300 leading-relaxed text-sm">...</p>
                         </div>
                         
                         <!-- Confidence Gauge -->
-                        <div class="col-span-12 lg:col-span-3 card-border bg-[#1b1b1d] p-4 flex flex-col items-center justify-center text-center rounded">
+                        <div class="col-span-12 lg:col-span-3 card-border bg-[#1b1b1d] p-4 flex flex-col items-center justify-center text-center rounded ai-top-gauge">
                             <span class="text-[9px] font-bold text-gray-500 uppercase mb-2">Confidence Level</span>
                             <div id="ai-gauge" class="text-3xl font-bold text-[#00f0ff] glow-cyan">0%</div>
                             <small id="ai-gauge-reason" class="text-[10px] text-[#b9cacb] mt-2 leading-tight">...</small>
@@ -1464,9 +1740,9 @@
                     <p class="text-[12px] text-[#b9cacb] mt-1">Collate alerts, manage lifecycle investigations, and export reports</p>
                 </div>
 
-                <div class="grid grid-cols-12 gap-6">
+                <div class="grid grid-cols-12 gap-6 incidents-grid">
                     <!-- Incidents List -->
-                    <div class="col-span-12 lg:col-span-5 flex flex-col gap-6">
+                    <div class="col-span-12 lg:col-span-5 flex flex-col gap-6 incidents-panel">
                         <!-- Create New Incident Case -->
                         <div class="card-border bg-[#1b1b1d] p-4 rounded">
                             <h3 class="text-xs font-bold text-white mb-4 uppercase">Log New Incident</h3>
@@ -1508,7 +1784,7 @@
                     </div>
 
                     <!-- Incident Report display -->
-                    <div class="col-span-12 lg:col-span-7 card-border bg-[#1b1b1d] p-4 rounded">
+                    <div class="col-span-12 lg:col-span-7 card-border bg-[#1b1b1d] p-4 rounded incidents-panel">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="text-xs font-bold text-white uppercase">Incident Report Section</h3>
                             <button id="gen-report-btn" class="hidden px-3 py-1 bg-[#00f0ff] text-black font-bold text-[11px] uppercase rounded hover:opacity-90" onclick="generateReport()">🧠 Generate Report</button>
@@ -1656,10 +1932,10 @@
                     <p class="text-[12px] text-[#b9cacb] mt-1">Lookup reputations of active IPs, domains, and file hashes strictly from database baselines</p>
                 </div>
 
-                <div class="card-border bg-[#1b1b1d] p-4 rounded max-w-xl mx-auto mb-6">
+                <div class="card-border bg-[#1b1b1d] p-4 rounded max-w-xl mx-auto mb-6 settings-card">
                     <h3 class="text-xs font-bold text-white mb-4 uppercase">Threat Indicator Query Form</h3>
                     <div class="space-y-3">
-                        <div class="grid grid-cols-3 gap-2">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 ti-form-grid">
                             <div>
                                 <label class="block text-[10px] font-bold text-[#b9cacb] mb-1">TYPE</label>
                                 <select id="ti-type" class="w-full bg-[#0d0d0f] border-gray-700 text-xs text-white rounded">
@@ -1668,7 +1944,7 @@
                                     <option value="hash">File Hash</option>
                                 </select>
                             </div>
-                            <div class="col-span-2">
+                            <div class="col-span-2 ti-form-col2">
                                 <label class="block text-[10px] font-bold text-[#b9cacb] mb-1">VALUE</label>
                                 <input id="ti-val" class="w-full bg-[#0d0d0f] border-gray-700 text-xs text-white rounded" type="text" placeholder="e.g. 185.220.101.42"/>
                             </div>
@@ -1734,9 +2010,9 @@
         // ─── SCREEN 8: ANALYST AI CHAT CONTROLLER ───
         function getChatLayout() {
             return `
-                <div class="mb-6 flex justify-between items-start">
+                <div class="mb-6 flex flex-wrap justify-between items-start gap-2 chat-header">
                     <div>
-                        <h2 class="text-[24px] font-semibold text-white tracking-tight">💬 Analyst AI Chat Assistant</h2>
+                        <h2 class="text-[24px] font-semibold text-white tracking-tight page-title">💬 Analyst AI Chat Assistant</h2>
                         <p class="text-[12px] text-[#b9cacb] mt-1">Ask questions, triage event codes, and decode obfuscated shells</p>
                     </div>
                     <button id="delete-chat-btn" onclick="clearChatHistory()" class="flex items-center gap-1.5 px-3 py-1.5 bg-red-950/40 border border-red-500/40 text-red-400 text-[10px] font-bold uppercase tracking-wider rounded hover:bg-red-900/50 hover:border-red-400 transition-all">
@@ -1752,7 +2028,7 @@
                     </div>
                 </div>
 
-                <div class="card-border bg-[#1b1b1d] rounded flex flex-col h-[500px]">
+                <div class="card-border bg-[#1b1b1d] rounded flex flex-col h-[500px] chat-box">
                     <div class="flex-grow p-4 overflow-y-auto custom-scrollbar flex flex-col gap-3" id="chat-messages-container">
                         <!-- Message bubble elements -->
                     </div>
@@ -1894,7 +2170,7 @@
                     <p class="text-[12px] text-[#b9cacb] mt-1">Manage OpenRouter API keys, model thresholds, and refresh rates</p>
                 </div>
 
-                <div class="card-border bg-[#1b1b1d] p-6 rounded max-w-xl mx-auto space-y-4">
+                <div class="card-border bg-[#1b1b1d] p-4 sm:p-6 rounded max-w-xl mx-auto space-y-4 settings-card">
                     <h3 class="text-xs font-bold text-white uppercase border-b border-gray-800 pb-2">AI Settings</h3>
                     
                     <div>
@@ -1922,6 +2198,7 @@
                             <option value="meta-llama/llama-3.3-70b-instruct:free">meta-llama/llama-3.3-70b-instruct:free</option>
                             <option value="meta-llama/llama-3.2-3b-instruct:free">meta-llama/llama-3.2-3b-instruct:free</option>
                             <option value="nousresearch/hermes-3-405b:free">nousresearch/hermes-3-405b:free</option>
+                            <option value="poolside/laguna-xs-2.1:free">Poolside: Laguna XS 2.1 (free)</option>
                         </select>
                     </div>
 
