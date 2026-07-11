@@ -201,6 +201,14 @@ class ThreatIntelResponse(BaseModel):
     source: Optional[str] = None
     recommended_actions: list[str] = []
     last_seen: Optional[str] = None
+    severity: Optional[str] = "Unknown"
+    confidence: Optional[int] = 0
+    category: Optional[str] = None
+    sources: list[str] = []
+    mitre: list[str] = []
+    first_seen: Optional[str] = None
+    related_alerts: list[AlertResponse] = []
+    ai_summary: Optional[str] = None
 
 
 # ─── Dashboard Schemas ──────────────────────────────────────

@@ -1955,10 +1955,27 @@
                     </div>
                 </div>
 
-                <div id="ti-result" class="max-w-xl mx-auto hidden">
+                <div id="ti-result" class="max-w-3xl mx-auto hidden mt-6 space-y-6">
                     <!-- Result card -->
                 </div>
             `;
+        }
+
+        function simulatedBlockIndicator(indicator) {
+            const banner = document.createElement("div");
+            banner.className = "fixed top-4 right-4 z-50 px-4 py-3 bg-red-900/95 border border-red-500 text-red-100 text-xs font-bold rounded shadow-lg max-w-sm";
+            banner.textContent = `✓ Firewall rule queued successfully: blocked indicator ${indicator} at perimeter.`;
+            document.body.appendChild(banner);
+            setTimeout(() => banner.remove(), 4000);
+        }
+
+        function pivotToChatWithContext(indicator) {
+            switchScreen("chat");
+            const input = document.getElementById("chat-input");
+            if (input) {
+                input.value = `Provide a threat hunting guide and query strategy for the threat indicator: ${indicator}.`;
+                input.focus();
+            }
         }
 
         async function queryThreatIntel() {
@@ -1980,26 +1997,194 @@
 
                 if (!data) return;
 
+                const severityStyles = {
+                    "Critical": { border: "border-red-500", text: "text-red-400", bg: "bg-red-950/20", badge: "bg-red-500/20 border-red-500 text-red-400" },
+                    "High": { border: "border-orange-500", text: "text-orange-400", bg: "bg-orange-950/20", badge: "bg-orange-500/20 border-orange-500 text-orange-400" },
+                    "Medium": { border: "border-yellow-500", text: "text-yellow-400", bg: "bg-yellow-950/20", badge: "bg-yellow-500/20 border-yellow-500 text-yellow-400" },
+                    "Low": { border: "border-green-500", text: "text-green-400", bg: "bg-green-950/20", badge: "bg-green-500/20 border-green-500 text-green-400" },
+                    "Unknown": { border: "border-gray-600", text: "text-gray-400", bg: "bg-gray-900/20", badge: "bg-gray-700/20 border-gray-600 text-gray-400" }
+                };
+                
+                const sev = data.severity || "Unknown";
+                const sevStyle = severityStyles[sev] || severityStyles["Unknown"];
+
                 const repColors = {
                     "Known Malicious": "border-red-500 text-red-400 bg-red-950/20",
                     "Suspicious": "border-orange-500 text-orange-400 bg-orange-950/20",
                     "Unknown": "border-gray-600 text-gray-400 bg-gray-900/20"
                 };
-                const colClass = repColors[data.reputation] || "border-gray-700 text-gray-300";
+                const colClass = repColors[data.reputation] || "border-gray-700 text-gray-300 bg-gray-900/20";
 
+                // Generate workflow stepper HTML
+                const workflowHtml = `
+                    <div class="card-border bg-[#1b1b1d] p-4 rounded mb-2">
+                        <span class="text-[9px] font-bold text-gray-500 uppercase tracking-widest block mb-3">Investigation Workflow Tracker</span>
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 md:gap-4 text-[11px]">
+                            <div class="flex items-center gap-2 text-[#00f0ff]"><span class="w-5 h-5 rounded-full bg-[#00f0ff]/20 flex items-center justify-center font-bold text-[10px]">1</span> <span>Indicator Lookup</span></div>
+                            <span class="hidden md:inline text-gray-600">➔</span>
+                            <div class="flex items-center gap-2 text-[#00f0ff]"><span class="w-5 h-5 rounded-full bg-[#00f0ff]/20 flex items-center justify-center font-bold text-[10px]">2</span> <span>Threat Match</span></div>
+                            <span class="hidden md:inline text-gray-600">➔</span>
+                            <div class="flex items-center gap-2 text-white"><span class="w-5 h-5 rounded-full bg-gray-800 flex items-center justify-center font-bold text-[10px]">3</span> <span>Risk Assessment</span></div>
+                            <span class="hidden md:inline text-gray-600">➔</span>
+                            <div class="flex items-center gap-2 text-gray-500"><span class="w-5 h-5 rounded-full bg-gray-900 flex items-center justify-center font-bold text-[10px]">4</span> <span>Containment Action</span></div>
+                        </div>
+                    </div>
+                `;
+
+                // Confidence rating block
+                let confidenceHtml = '';
+                if (data.reputation !== "Unknown" && data.confidence > 0) {
+                    const blockCount = Math.round(data.confidence / 10);
+                    const blocks = "█".repeat(blockCount) + "░".repeat(10 - blockCount);
+                    confidenceHtml = `
+                        <div class="mt-4 pt-4 border-t border-gray-800/60">
+                            <div class="flex justify-between items-center text-[10px] font-bold text-[#b9cacb] mb-1">
+                                <span>CONFIDENCE SCORE</span>
+                                <span class="text-[#00f0ff] font-data-mono">${data.confidence}%</span>
+                            </div>
+                            <div class="font-data-mono text-[#00f0ff] text-sm tracking-widest">${blocks}</div>
+                            <span class="text-[9px] text-gray-500 block mt-1">Based on indicator reputation, historical logs, & blacklists.</span>
+                        </div>
+                    `;
+                }
+
+                // Sources list
+                const sourcesHtml = (data.sources && data.sources.length > 0) 
+                    ? data.sources.map(src => `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-gray-800 border border-gray-700 text-gray-300">✓ ${src}</span>`).join(" ")
+                    : `<span class="text-xs text-gray-500">None registered</span>`;
+
+                // MITRE IDs list
+                const mitreHtml = (data.mitre && data.mitre.length > 0)
+                    ? data.mitre.map(m => `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-[#00f0ff]/10 border border-[#00f0ff]/30 text-[#00f0ff] font-data-mono">${m}</span>`).join(" ")
+                    : `<span class="text-xs text-gray-500">N/A</span>`;
+
+                // Related alerts list
+                let alertsHtml = `
+                    <div class="card-border bg-[#1b1b1d] p-4 rounded text-xs space-y-3">
+                        <h5 class="font-bold text-white uppercase text-[10px] tracking-wider border-b border-gray-800 pb-2">Related Active Alerts</h5>
+                        <p class="text-xs text-gray-500">No active network alerts correlated with this indicator.</p>
+                    </div>
+                `;
+                if (data.related_alerts && data.related_alerts.length > 0) {
+                    alertsHtml = `
+                        <div class="card-border bg-[#1b1b1d] p-4 rounded text-xs space-y-3">
+                            <h5 class="font-bold text-white uppercase text-[10px] tracking-wider border-b border-gray-800 pb-2">Related Active Alerts</h5>
+                            <div class="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
+                                ${data.related_alerts.map(a => `
+                                    <div class="p-2.5 bg-[#121214] border border-gray-800 rounded flex flex-col sm:flex-row sm:items-start justify-between gap-3 hover:border-gray-700 transition-all">
+                                        <div>
+                                            <div class="flex items-center gap-2 flex-wrap">
+                                                <span class="font-bold text-[#00f0ff] font-data-mono">#${a.id}</span>
+                                                <span class="text-gray-400 font-data-mono font-bold">${a.host}</span>
+                                                <span class="px-1.5 py-0.5 bg-[#ffb4ab]/10 border border-[#ffb4ab]/30 text-[#ffb4ab] rounded text-[8px] font-bold uppercase">${a.severity}</span>
+                                            </div>
+                                            <p class="text-gray-300 mt-1 text-[11px]">${a.description}</p>
+                                        </div>
+                                        <button onclick="pivotToAlert(${a.id})" class="sm:self-center px-3 py-1.5 bg-[#201f21] border border-gray-700 text-[#00f0ff] hover:bg-gray-800 text-[10px] font-bold uppercase rounded tracking-wider whitespace-nowrap self-stretch text-center">
+                                            Inspect Alert
+                                        </button>
+                                    </div>
+                                `).join("")}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // AI summary block
+                const aiSummaryHtml = `
+                    <div class="card-border bg-[#1b1b1d] p-4 rounded text-xs border-l-4 border-l-[#00f0ff]">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="material-symbols-outlined text-[#00f0ff] text-lg animate-pulse">psychology</span>
+                            <h5 class="font-bold text-white uppercase text-[10px] tracking-wider">AI Analyst Summary</h5>
+                        </div>
+                        <p class="text-gray-300 leading-relaxed text-[11.5px]">${data.ai_summary || "Analyzing intelligence feeds..."}</p>
+                    </div>
+                `;
+
+                // Action buttons
+                const actionsHtml = `
+                    <div class="flex flex-col sm:flex-row gap-3 pt-2">
+                        <button onclick="simulatedBlockIndicator('${data.indicator}')" class="flex-1 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold text-xs uppercase tracking-wider rounded transition-colors text-center">
+                            Block Indicator
+                        </button>
+                        <button onclick="pivotToChatWithContext('${data.indicator}')" class="flex-1 py-2.5 bg-[#201f21] border border-gray-700 hover:bg-gray-800 text-[#00f0ff] font-bold text-xs uppercase tracking-wider rounded transition-colors text-center">
+                            Ask AI Analyst
+                        </button>
+                    </div>
+                `;
+
+                // Build HTML
                 card.innerHTML = `
-                    <div class="card-border p-4 rounded ${colClass} mb-4">
-                        <h4 class="text-base font-bold uppercase tracking-wider mb-2">${data.reputation}</h4>
-                        <p class="text-xs"><b>Indicator:</b> <code>${data.indicator}</code> (${data.type.toUpperCase()})</p>
-                        ${data.malware_family ? `<p class="text-xs mt-1"><b>Malware Family:</b> ${data.malware_family}</p>` : ""}
-                        <p class="text-xs mt-1"><b>Source:</b> ${data.source}</p>
+                    ${workflowHtml}
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Left column: Main Intel Reputation & classification -->
+                        <div class="space-y-6">
+                            <div class="card-border p-4 rounded ${colClass} relative overflow-hidden flex flex-col justify-between">
+                                <div>
+                                    <div class="flex justify-between items-start mb-3">
+                                        <span class="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Threat Intelligence Result</span>
+                                        <span class="px-2 py-0.5 rounded text-[8px] font-bold uppercase border ${sevStyle.badge}">${sev} Risk</span>
+                                    </div>
+                                    <h4 class="text-xl font-bold uppercase tracking-wider mb-2 ${sevStyle.text}">${data.reputation}</h4>
+                                    
+                                    <div class="space-y-1.5 text-xs text-[#b9cacb] mt-4">
+                                        <p><b>Indicator:</b> <code class="text-white font-data-mono select-all block sm:inline-block">${data.indicator}</code></p>
+                                        <p class="capitalize"><b>Type:</b> ${data.type}</p>
+                                    </div>
+                                </div>
+                                
+                                ${confidenceHtml}
+                            </div>
+                            
+                            <div class="card-border bg-[#1b1b1d] p-4 rounded text-xs space-y-3">
+                                <h5 class="font-bold text-white uppercase text-[10px] tracking-wider border-b border-gray-800 pb-2">Threat Classification</h5>
+                                <div class="space-y-2 text-[#b9cacb]">
+                                    <p><b>Threat Category:</b> <span class="text-white">${data.category || (data.reputation === "Unknown" ? "Unclassified" : "General Threat")}</span></p>
+                                    <p><b>Malware Family:</b> <span class="text-white">${data.malware_family || "N/A"}</span></p>
+                                    <p class="flex items-center gap-2 flex-wrap"><b>MITRE Tech ID:</b> ${mitreHtml}</p>
+                                    <p class="flex items-center gap-2 flex-wrap"><b>Threat Sources:</b> ${sourcesHtml}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right column: Activity timeline, alerts, AI assessment -->
+                        <div class="space-y-6">
+                            <div class="card-border bg-[#1b1b1d] p-4 rounded text-xs space-y-2">
+                                <h5 class="font-bold text-white uppercase text-[10px] tracking-wider border-b border-gray-800 pb-2">Indicator Activity Timeline</h5>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <span class="text-gray-500 block text-[9px] uppercase">First Seen</span>
+                                        <span class="text-gray-300 font-data-mono">${data.first_seen || "N/A"}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-500 block text-[9px] uppercase">Last Seen</span>
+                                        <span class="text-gray-300 font-data-mono">${data.last_seen || "N/A"}</span>
+                                    </div>
+                                </div>
+                                <div class="pt-2 border-t border-gray-800/60 flex justify-between items-center">
+                                    <span class="text-gray-500 text-[9px] uppercase">Correlated Events In-DB</span>
+                                    <span class="px-2 py-0.5 bg-gray-850 border border-gray-700 text-[#00f0ff] rounded text-[10px] font-bold font-data-mono">${data.related_alerts ? data.related_alerts.length : 0}</span>
+                                </div>
+                            </div>
+
+                            ${aiSummaryHtml}
+                            
+                            <div class="card-border bg-[#1b1b1d] p-4 rounded text-xs space-y-2">
+                                <h5 class="font-bold text-white uppercase text-[10px] tracking-wider border-b border-gray-800 pb-2">Recommended Mitigation Actions</h5>
+                                <ul class="list-disc pl-4 text-gray-300 space-y-1.5">
+                                    ${(data.recommended_actions || []).map(a => `<li>${a}</li>`).join("")}
+                                </ul>
+                                ${data.reputation === "Unknown" ? `
+                                    <p class="text-[10.5px] text-yellow-500/80 mt-2 block font-medium">⚠️ UNKNOWN classification indicates the indicator has not matched our local malicious intelligence baseline. It should not be treated as clean without external verification.</p>
+                                ` : ''}
+                            </div>
+                        </div>
                     </div>
-                    <div class="card-border bg-[#1b1b1d] p-4 rounded text-xs">
-                        <h5 class="font-bold text-white mb-2 uppercase">Recommended SOC Mitigation Actions</h5>
-                        <ul class="list-disc pl-4 text-gray-300 space-y-1">
-                            ${(data.recommended_actions || []).map(a => `<li>${a}</li>`).join("")}
-                        </ul>
-                    </div>
+                    
+                    ${alertsHtml}
+                    
+                    ${actionsHtml}
                 `;
 
             } catch (e) {
